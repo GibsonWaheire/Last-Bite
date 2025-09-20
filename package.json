@@ -1,0 +1,34 @@
+{
+  "name": "last-bite-rescue",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Last Bite Rescue - Food rescue platform connecting stores with customers",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "build": "npm run build:client",
+    "build:client": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "lint": "cd client && npm run lint",
+    "test": "cd server && npm test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "keywords": [
+    "food-rescue",
+    "sustainability",
+    "react",
+    "express",
+    "typescript"
+  ],
+  "author": "Last Bite Rescue",
+  "license": "MIT"
+}
