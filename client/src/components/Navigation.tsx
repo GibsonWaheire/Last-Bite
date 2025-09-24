@@ -8,7 +8,7 @@ const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50 animate-in slide-in-from-top-2 duration-500">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
           <Heart className="h-8 w-8 text-fresh fill-fresh" />
@@ -21,11 +21,8 @@ const Navigation = () => {
           <Link to="/listings" className="text-foreground hover:text-fresh transition-colors">
             Browse Food
           </Link>
-          <Link to="/create-listing" className="text-foreground hover:text-fresh transition-colors">
-            For Stores
-          </Link>
-          <Link to="/purchases" className="text-foreground hover:text-fresh transition-colors">
-            My Purchases
+          <Link to="/how-it-works" className="text-foreground hover:text-fresh transition-colors">
+            How It Works
           </Link>
         </div>
         
@@ -63,7 +60,7 @@ const Navigation = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t bg-card/95 backdrop-blur-sm">
+        <div className="md:hidden border-t bg-card/95 backdrop-blur-sm animate-in slide-in-from-top-2 duration-300">
           <div className="container mx-auto px-4 py-4 space-y-4">
             <div className="space-y-2">
               <Link 
@@ -74,18 +71,11 @@ const Navigation = () => {
                 Browse Food
               </Link>
               <Link 
-                to="/create-listing" 
+                to="/how-it-works" 
                 className="block py-2 text-foreground hover:text-fresh transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                For Stores
-              </Link>
-              <Link 
-                to="/purchases" 
-                className="block py-2 text-foreground hover:text-fresh transition-colors"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                My Purchases
+                How It Works
               </Link>
             </div>
             

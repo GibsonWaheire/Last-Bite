@@ -1,5 +1,6 @@
 import { Heart, Facebook, Twitter, Instagram, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -35,10 +36,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-white/80">
-              <li><a href="#" className="hover:text-fresh transition-colors">Browse Food</a></li>
-              <li><a href="#" className="hover:text-fresh transition-colors">How It Works</a></li>
-              <li><a href="#" className="hover:text-fresh transition-colors">For Stores</a></li>
-              <li><a href="#" className="hover:text-fresh transition-colors">About Us</a></li>
+              <li><Link to="/listings" className="hover:text-fresh transition-colors">Browse Food</Link></li>
+              <li><Link to="/" className="hover:text-fresh transition-colors">How It Works</Link></li>
+              <li><Link to="/create-listing" className="hover:text-fresh transition-colors">For Stores</Link></li>
+              <li><Link to="/purchases" className="hover:text-fresh transition-colors">My Purchases</Link></li>
             </ul>
           </div>
           

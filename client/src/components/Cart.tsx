@@ -9,6 +9,7 @@ import { ShoppingCart, Plus, Minus, Trash2, CreditCard } from "lucide-react";
 import { useCart, useCartActions } from "@/contexts/CartContext";
 import { formatCurrency } from "@/lib/currency";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 const Cart = () => {
   const { state } = useCart();
@@ -32,10 +33,10 @@ const Cart = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative hover:scale-110 transition-transform duration-200">
           <ShoppingCart className="h-5 w-5" />
           {state.totalItems > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+            <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs animate-in zoom-in-50 duration-300">
               {state.totalItems}
             </Badge>
           )}
@@ -74,8 +75,8 @@ const Cart = () => {
           ) : (
             <>
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-                {state.items.map((item) => (
-                  <Card key={item.id} className="p-4">
+                {state.items.map((item, index) => (
+                  <Card key={item.id} className="p-4 animate-in slide-in-from-right-2 duration-300" style={{ animationDelay: `${index * 100}ms` }}>
                     <div className="flex items-start space-x-3">
                       <img 
                         src={item.image} 
@@ -152,10 +153,12 @@ const Cart = () => {
                 
                 <Button 
                   className="w-full bg-gradient-accent hover:shadow-soft"
-                  onClick={handleCheckout}
+                  asChild
                 >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Checkout
+                  <Link to="/user-dashboard" onClick={() => setIsOpen(false)}>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Go to Dashboard
+                  </Link>
                 </Button>
               </div>
             </>

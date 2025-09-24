@@ -5,9 +5,11 @@ import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Grid, List, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, Filter, Grid, List, Loader2, SortAsc, SortDesc, SlidersHorizontal, Clock, Zap, AlertTriangle, MapPin } from "lucide-react";
 import { FoodCardSkeleton } from "@/components/Skeletons";
 import { ErrorBoundary, FoodGridErrorFallback } from "@/components/ErrorBoundary";
+import { StaggeredContainer } from "@/components/animations";
 import { formatCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 import breadImage from "@/assets/bread.jpg";
@@ -20,6 +22,11 @@ const ListingsPage = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"name" | "price" | "discount" | "expiry">("expiry");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 5000 });
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [urgencyFilter, setUrgencyFilter] = useState<"all" | "today" | "tomorrow" | "week" | "nearby">("all");
 
   const mockFoodItems = [
     {
@@ -27,7 +34,7 @@ const ListingsPage = () => {
       name: "Artisan Sourdough Bread",
       originalPrice: 899,
       discountedPrice: 399,
-      expiryDate: "2024-12-22",
+      expiryDate: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 hours from now
       store: "Baker's Corner",
       category: "Bakery",
       image: breadImage,
@@ -39,7 +46,7 @@ const ListingsPage = () => {
       name: "Organic Mixed Vegetables",
       originalPrice: 1299,
       discountedPrice: 599,
-      expiryDate: "2024-12-23",
+      expiryDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 day from now
       store: "Green Grocer",
       category: "Produce",
       image: vegetablesImage,
@@ -51,7 +58,7 @@ const ListingsPage = () => {
       name: "Premium Dairy Bundle",
       originalPrice: 1599,
       discountedPrice: 799,
-      expiryDate: "2024-12-25",
+      expiryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 days from now
       store: "Farm Fresh",
       category: "Dairy",
       image: dairyImage,
@@ -63,9 +70,9 @@ const ListingsPage = () => {
       name: "Whole Grain Pastries",
       originalPrice: 699,
       discountedPrice: 299,
-      expiryDate: "2024-12-21",
+      expiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 5 days from now
       store: "Baker's Corner",
-      category: "Bakery", 
+      category: "Bakery",
       image: breadImage,
       stock: 6,
       description: "Delicious whole grain pastries perfect for breakfast or snacks."
@@ -75,7 +82,7 @@ const ListingsPage = () => {
       name: "Seasonal Fruit Mix",
       originalPrice: 999,
       discountedPrice: 499,
-      expiryDate: "2024-12-24",
+      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
       store: "Green Grocer",
       category: "Produce",
       image: vegetablesImage,
@@ -87,7 +94,7 @@ const ListingsPage = () => {
       name: "Gourmet Cheese Selection",
       originalPrice: 1899,
       discountedPrice: 899,
-      expiryDate: "2024-12-26",
+      expiryDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 10 days from now
       store: "Farm Fresh",
       category: "Dairy",
       image: dairyImage,
@@ -124,11 +131,57 @@ const ListingsPage = () => {
 
   const categories = ["all", "Bakery", "Produce", "Dairy"];
 
+  // Helper function to calculate urgency level
+  const getUrgencyLevel = (expiryDate: string) => {
+    const now = new Date();
+    const expiry = new Date(expiryDate);
+    const diffMs = expiry.getTime() - now.getTime();
+    
+    if (diffMs <= 0) return "expired";
+    
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays === 0) return "today";
+    if (diffDays === 1) return "tomorrow";
+    if (diffDays <= 7) return "week";
+    return "normal";
+  };
+
   const filteredItems = mockFoodItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.store.toLowerCase().includes(searchTerm.toLowerCase());
+                         item.store.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesPriceRange = item.discountedPrice >= priceRange.min && item.discountedPrice <= priceRange.max;
+    
+    // Urgency filtering
+    const urgencyLevel = getUrgencyLevel(item.expiryDate);
+    const matchesUrgency = urgencyFilter === "all" || urgencyLevel === urgencyFilter;
+    
+    return matchesSearch && matchesCategory && matchesPriceRange && matchesUrgency;
+  }).sort((a, b) => {
+    let comparison = 0;
+
+    switch (sortBy) {
+      case "name":
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case "price":
+        comparison = a.discountedPrice - b.discountedPrice;
+        break;
+      case "discount": {
+        const discountA = ((a.originalPrice - a.discountedPrice) / a.originalPrice) * 100;
+        const discountB = ((b.originalPrice - b.discountedPrice) / b.originalPrice) * 100;
+        comparison = discountA - discountB;
+        break;
+      }
+      case "expiry":
+        comparison = new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
+        break;
+    }
+
+    return sortOrder === "asc" ? comparison : -comparison;
   });
 
   const handleAddToCart = (id: string) => {
@@ -202,6 +255,57 @@ const ListingsPage = () => {
           </div>
         </div>
 
+        {/* Urgency Filter Buttons */}
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={urgencyFilter === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUrgencyFilter("all")}
+              className="flex items-center"
+            >
+              <Clock className="h-4 w-4 mr-1" />
+              All Items
+            </Button>
+            <Button
+              variant={urgencyFilter === "today" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUrgencyFilter("today")}
+              className="flex items-center bg-red-500 hover:bg-red-600 text-white border-red-500"
+            >
+              <AlertTriangle className="h-4 w-4 mr-1" />
+              Expires Today
+            </Button>
+            <Button
+              variant={urgencyFilter === "tomorrow" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUrgencyFilter("tomorrow")}
+              className="flex items-center bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
+            >
+              <Zap className="h-4 w-4 mr-1" />
+              Expires Tomorrow
+            </Button>
+            <Button
+              variant={urgencyFilter === "week" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUrgencyFilter("week")}
+              className="flex items-center bg-yellow-500 hover:bg-yellow-600 text-black border-yellow-500"
+            >
+              <Clock className="h-4 w-4 mr-1" />
+              This Week
+            </Button>
+            <Button
+              variant={urgencyFilter === "nearby" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUrgencyFilter("nearby")}
+              className="flex items-center"
+            >
+              <MapPin className="h-4 w-4 mr-1" />
+              Near Me
+            </Button>
+          </div>
+        </div>
+
         {/* Results Count */}
         <div className="mb-6">
           <p className="text-sm text-muted-foreground">
@@ -234,11 +338,14 @@ const ListingsPage = () => {
               </Button>
             </div>
           ) : (
-            <div className={`grid gap-6 ${
-              viewMode === "grid" 
-                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" 
-                : "grid-cols-1"
-            }`}>
+            <StaggeredContainer 
+              className={`grid gap-6 ${
+                viewMode === "grid" 
+                  ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" 
+                  : "grid-cols-1"
+              }`}
+              staggerDelay={150}
+            >
               {filteredItems.map((item) => (
                 <FoodListingCard 
                   key={item.id} 
@@ -246,7 +353,7 @@ const ListingsPage = () => {
                   onAddToCart={handleAddToCart}
                 />
               ))}
-            </div>
+            </StaggeredContainer>
           )}
 
           {/* No Results */}

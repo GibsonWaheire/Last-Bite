@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Package, DollarSign, Filter } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { StaggeredContainer } from "@/components/animations";
 import breadImage from "@/assets/bread.jpg";
 import vegetablesImage from "@/assets/vegetables.jpg";
 import dairyImage from "@/assets/dairy.jpg";
@@ -157,7 +158,7 @@ const PurchasesPage = () => {
         </div>
 
         {/* Purchase History */}
-        <div className="space-y-4">
+        <StaggeredContainer className="space-y-4" staggerDelay={100}>
           {filteredPurchases.length > 0 ? (
             filteredPurchases.map((purchase) => (
               <PurchaseHistoryCard key={purchase.id} {...purchase} />
@@ -179,7 +180,7 @@ const PurchasesPage = () => {
               </Button>
             </div>
           )}
-        </div>
+        </StaggeredContainer>
 
         {/* Recent Activity Summary */}
         {filteredPurchases.length > 0 && (
