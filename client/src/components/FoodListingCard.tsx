@@ -2,6 +2,8 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin, Star, ShoppingCart } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
+import { useCartActions } from "@/contexts/CartContext";
 
 interface FoodListingCardProps {
   id: string;
@@ -32,8 +34,23 @@ const FoodListingCard = ({
 }: FoodListingCardProps) => {
   const discount = Math.round(((originalPrice - discountedPrice) / originalPrice) * 100);
   const daysUntilExpiry = Math.ceil((new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  const { addToCart } = useCartActions();
 
   const handleAddToCart = () => {
+    const cartItem = {
+      id,
+      name,
+      originalPrice,
+      discountedPrice,
+      store,
+      image,
+      category,
+      expiryDate,
+      stock
+    };
+    
+    addToCart(cartItem);
+    
     if (onAddToCart) {
       onAddToCart(id);
     }
@@ -79,8 +96,8 @@ const FoodListingCard = ({
         
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-2">
-            <span className="text-2xl font-bold text-fresh">${discountedPrice}</span>
-            <span className="text-sm text-muted-foreground line-through">${originalPrice}</span>
+            <span className="text-2xl font-bold text-fresh">{formatCurrency(discountedPrice)}</span>
+            <span className="text-sm text-muted-foreground line-through">{formatCurrency(originalPrice)}</span>
           </div>
           <div className="text-xs text-muted-foreground">
             {stock} left

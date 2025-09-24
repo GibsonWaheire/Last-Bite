@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Filter, Grid, List, Loader2 } from "lucide-react";
 import { FoodCardSkeleton } from "@/components/Skeletons";
 import { ErrorBoundary, FoodGridErrorFallback } from "@/components/ErrorBoundary";
+import { formatCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 import breadImage from "@/assets/bread.jpg";
 import vegetablesImage from "@/assets/vegetables.jpg";
@@ -24,8 +25,8 @@ const ListingsPage = () => {
     {
       id: "1",
       name: "Artisan Sourdough Bread",
-      originalPrice: 8.99,
-      discountedPrice: 3.99,
+      originalPrice: 899,
+      discountedPrice: 399,
       expiryDate: "2024-12-22",
       store: "Baker's Corner",
       category: "Bakery",
@@ -36,8 +37,8 @@ const ListingsPage = () => {
     {
       id: "2",
       name: "Organic Mixed Vegetables",
-      originalPrice: 12.99,
-      discountedPrice: 5.99,
+      originalPrice: 1299,
+      discountedPrice: 599,
       expiryDate: "2024-12-23",
       store: "Green Grocer",
       category: "Produce",
@@ -48,8 +49,8 @@ const ListingsPage = () => {
     {
       id: "3",
       name: "Premium Dairy Bundle",
-      originalPrice: 15.99,
-      discountedPrice: 7.99,
+      originalPrice: 1599,
+      discountedPrice: 799,
       expiryDate: "2024-12-25",
       store: "Farm Fresh",
       category: "Dairy",
@@ -60,8 +61,8 @@ const ListingsPage = () => {
     {
       id: "4",
       name: "Whole Grain Pastries",
-      originalPrice: 6.99,
-      discountedPrice: 2.99,
+      originalPrice: 699,
+      discountedPrice: 299,
       expiryDate: "2024-12-21",
       store: "Baker's Corner",
       category: "Bakery", 
@@ -72,8 +73,8 @@ const ListingsPage = () => {
     {
       id: "5",
       name: "Seasonal Fruit Mix",
-      originalPrice: 9.99,
-      discountedPrice: 4.99,
+      originalPrice: 999,
+      discountedPrice: 499,
       expiryDate: "2024-12-24",
       store: "Green Grocer",
       category: "Produce",
@@ -84,8 +85,8 @@ const ListingsPage = () => {
     {
       id: "6",
       name: "Gourmet Cheese Selection",
-      originalPrice: 18.99,
-      discountedPrice: 8.99,
+      originalPrice: 1899,
+      discountedPrice: 899,
       expiryDate: "2024-12-26",
       store: "Farm Fresh",
       category: "Dairy",

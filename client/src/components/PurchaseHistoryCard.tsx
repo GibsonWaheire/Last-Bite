@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Package, DollarSign } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 
 interface PurchaseHistoryCardProps {
   id: string;
@@ -73,7 +74,7 @@ const PurchaseHistoryCard = ({
               </div>
               <div className="flex items-center text-lg font-bold text-fresh">
                 <DollarSign className="h-4 w-4 mr-1" />
-                {price.toFixed(2)}
+                {formatCurrency(price)}
               </div>
             </div>
           </div>

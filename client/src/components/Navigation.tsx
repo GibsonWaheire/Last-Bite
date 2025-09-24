@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Store, Heart, User, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import Cart from "./Cart";
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -31,9 +32,7 @@ const Navigation = () => {
         <div className="flex items-center space-x-3">
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-3">
-            <Button variant="ghost" size="icon">
-              <ShoppingCart className="h-5 w-5" />
-            </Button>
+            <Cart />
             <Button variant="ghost" size="icon">
               <Store className="h-5 w-5" />
             </Button>
@@ -91,10 +90,9 @@ const Navigation = () => {
             </div>
             
             <div className="pt-4 border-t space-y-2">
-              <Button variant="ghost" className="w-full justify-start">
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Cart
-              </Button>
+              <div className="w-full">
+                <Cart />
+              </div>
               <Button variant="ghost" className="w-full justify-start">
                 <Store className="h-4 w-4 mr-2" />
                 Stores

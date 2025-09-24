@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Package, DollarSign, Filter } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 import breadImage from "@/assets/bread.jpg";
 import vegetablesImage from "@/assets/vegetables.jpg";
 import dairyImage from "@/assets/dairy.jpg";
@@ -19,7 +20,7 @@ const PurchasesPage = () => {
       foodName: "Artisan Sourdough Bread",
       store: "Baker's Corner",
       quantity: 2,
-      price: 7.98,
+      price: 798,
       purchaseDate: "2024-12-15",
       status: "completed" as const,
       image: breadImage
@@ -29,7 +30,7 @@ const PurchasesPage = () => {
       foodName: "Organic Mixed Vegetables",
       store: "Green Grocer",
       quantity: 1,
-      price: 5.99,
+      price: 599,
       purchaseDate: "2024-12-14",
       status: "completed" as const,
       image: vegetablesImage
@@ -39,7 +40,7 @@ const PurchasesPage = () => {
       foodName: "Premium Dairy Bundle", 
       store: "Farm Fresh",
       quantity: 1,
-      price: 7.99,
+      price: 799,
       purchaseDate: "2024-12-13",
       status: "pending" as const,
       image: dairyImage
@@ -49,7 +50,7 @@ const PurchasesPage = () => {
       foodName: "Whole Grain Pastries",
       store: "Baker's Corner", 
       quantity: 3,
-      price: 8.97,
+      price: 897,
       purchaseDate: "2024-12-12",
       status: "completed" as const,
       image: breadImage
@@ -59,7 +60,7 @@ const PurchasesPage = () => {
       foodName: "Seasonal Fruit Mix",
       store: "Green Grocer",
       quantity: 2,
-      price: 9.98,
+      price: 998,
       purchaseDate: "2024-12-11",
       status: "cancelled" as const,
       image: vegetablesImage
@@ -125,7 +126,7 @@ const PurchasesPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Saved</p>
-                <p className="text-2xl font-bold text-fresh">${totalSpent.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-fresh">{formatCurrency(totalSpent)}</p>
               </div>
               <DollarSign className="h-8 w-8 text-fresh" />
             </div>
@@ -194,7 +195,7 @@ const PurchasesPage = () => {
               <div>
                 <p className="text-muted-foreground">Average Order Value:</p>
                 <p className="font-medium">
-                  ${(totalSpent / completedOrders).toFixed(2)}
+                  {formatCurrency(totalSpent / completedOrders)}
                 </p>
               </div>
             </div>

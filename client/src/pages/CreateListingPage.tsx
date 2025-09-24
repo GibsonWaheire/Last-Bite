@@ -15,6 +15,7 @@ import { CalendarIcon, Upload, Plus, Save, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { foodListingSchema, type FoodListingFormData } from "@/lib/validations";
+import { formatCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 
 const CreateListingPage = () => {
@@ -147,13 +148,13 @@ const CreateListingPage = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="originalPrice">Original Price ($) *</Label>
+                      <Label htmlFor="originalPrice">Original Price (KES) *</Label>
                       <Input
                         id="originalPrice"
                         type="number"
-                        step="0.01"
+                        step="1"
                         min="0"
-                        placeholder="8.99"
+                        placeholder="899"
                         {...form.register("originalPrice")}
                       />
                       {form.formState.errors.originalPrice && (
@@ -162,13 +163,13 @@ const CreateListingPage = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="discountedPrice">Discounted Price ($) *</Label>
+                      <Label htmlFor="discountedPrice">Discounted Price (KES) *</Label>
                       <Input
                         id="discountedPrice"
                         type="number"
-                        step="0.01"
+                        step="1"
                         min="0"
-                        placeholder="3.99"
+                        placeholder="399"
                         {...form.register("discountedPrice")}
                       />
                       {form.formState.errors.discountedPrice && (
