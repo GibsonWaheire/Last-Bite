@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Leaf, Users, TrendingDown } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroFood from "@/assets/hero-food.jpg";
 
 const HeroSection = () => {
@@ -34,12 +35,16 @@ const HeroSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 mb-12">
-            <Button size="lg" className="bg-gradient-hero hover:shadow-glow transition-all duration-300">
-              Browse Deals
-              <ArrowRight className="ml-2 h-5 w-5" />
+            <Button size="lg" className="bg-gradient-hero hover:shadow-glow transition-all duration-300" asChild>
+              <Link to="/listings">
+                Browse Deals
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-fresh text-fresh hover:bg-fresh hover:text-white">
-              For Store Owners
+            <Button size="lg" variant="outline" className="border-fresh text-fresh hover:bg-fresh hover:text-white" asChild>
+              <Link to="/store-dashboard">
+                For Store Owners
+              </Link>
             </Button>
           </div>
           
