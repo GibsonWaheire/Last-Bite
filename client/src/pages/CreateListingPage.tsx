@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,24 +11,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Upload, Plus, Save } from "lucide-react";
+import { CalendarIcon, Upload, Plus, Save, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { foodListingSchema, type FoodListingFormData } from "@/lib/validations";
+import { toast } from "sonner";
 
 const CreateListingPage = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    category: "",
-    originalPrice: "",
-    discountedPrice: "",
-    stock: "",
-    expiryDate: undefined as Date | undefined,
-    store: "",
-    image: ""
-  });
-
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<FoodListingFormData>({
+    resolver: zodResolver(foodListingSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      category: "",
+      originalPrice: "",
+      discountedPrice: "",
+      stock: "",
+      expiryDate: undefined,
+      store: "",
+      image: ""
+    }
+  });
 
   const categories = [
     "Bakery",
@@ -40,53 +47,27 @@ const CreateListingPage = () => {
     "Snacks"
   ];
 
-  const handleInputChange = (field: string, value: string | Date) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: FoodListingFormData) => {
     setIsSubmitting(true);
     
     try {
       // TODO: Implement API call to create listing
-      console.log("Creating listing:", formData);
+      console.log("Creating listing:", data);
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Reset form
-      setFormData({
-        name: "",
-        description: "",
-        category: "",
-        originalPrice: "",
-        discountedPrice: "",
-        stock: "",
-        expiryDate: undefined,
-        store: "",
-        image: ""
-      });
+      form.reset();
       
-      alert("Food listing created successfully!");
+      toast.success("Food listing created successfully!");
     } catch (error) {
       console.error("Error creating listing:", error);
-      alert("Failed to create listing. Please try again.");
+      toast.error("Failed to create listing. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const isFormValid = formData.name && 
-                     formData.category && 
-                     formData.originalPrice && 
-                     formData.discountedPrice && 
-                     formData.stock && 
-                     formData.expiryDate &&
-                     formData.store;
 
   return (
     <div className="min-h-screen bg-background">
@@ -112,7 +93,7 @@ const CreateListingPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
                   <div>
@@ -120,10 +101,11 @@ const CreateListingPage = () => {
                     <Input
                       id="name"
                       placeholder="e.g., Artisan Sourdough Bread"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange("name", e.target.value)}
-                      required
+                      {...form.register("name")}
                     />
+                    {form.formState.errors.name && (
+                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
+                    )}
                   </div>
 
                   <div>
@@ -131,15 +113,17 @@ const CreateListingPage = () => {
                     <Textarea
                       id="description"
                       placeholder="Describe the food item, its quality, and any special features..."
-                      value={formData.description}
-                      onChange={(e) => handleInputChange("description", e.target.value)}
+                      {...form.register("description")}
                       rows={3}
                     />
+                    {form.formState.errors.description && (
+                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.description.message}</p>
+                    )}
                   </div>
 
                   <div>
                     <Label htmlFor="category">Category *</Label>
-                    <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+                    <Select value={form.watch("category")} onValueChange={(value) => form.setValue("category", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
@@ -151,6 +135,9 @@ const CreateListingPage = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                    {form.formState.errors.category && (
+                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.category.message}</p>
+                    )}
                   </div>
                 </div>
 
@@ -167,10 +154,11 @@ const CreateListingPage = () => {
                         step="0.01"
                         min="0"
                         placeholder="8.99"
-                        value={formData.originalPrice}
-                        onChange={(e) => handleInputChange("originalPrice", e.target.value)}
-                        required
+                        {...form.register("originalPrice")}
                       />
+                      {form.formState.errors.originalPrice && (
+                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.originalPrice.message}</p>
+                      )}
                     </div>
 
                     <div>
@@ -181,16 +169,17 @@ const CreateListingPage = () => {
                         step="0.01"
                         min="0"
                         placeholder="3.99"
-                        value={formData.discountedPrice}
-                        onChange={(e) => handleInputChange("discountedPrice", e.target.value)}
-                        required
+                        {...form.register("discountedPrice")}
                       />
+                      {form.formState.errors.discountedPrice && (
+                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.discountedPrice.message}</p>
+                      )}
                     </div>
                   </div>
 
-                  {formData.originalPrice && formData.discountedPrice && (
+                  {form.watch("originalPrice") && form.watch("discountedPrice") && (
                     <div className="text-sm text-muted-foreground">
-                      Discount: {Math.round(((parseFloat(formData.originalPrice) - parseFloat(formData.discountedPrice)) / parseFloat(formData.originalPrice)) * 100)}%
+                      Discount: {Math.round(((parseFloat(form.watch("originalPrice")) - parseFloat(form.watch("discountedPrice"))) / parseFloat(form.watch("originalPrice"))) * 100)}%
                     </div>
                   )}
                 </div>
@@ -207,10 +196,11 @@ const CreateListingPage = () => {
                         type="number"
                         min="1"
                         placeholder="12"
-                        value={formData.stock}
-                        onChange={(e) => handleInputChange("stock", e.target.value)}
-                        required
+                        {...form.register("stock")}
                       />
+                      {form.formState.errors.stock && (
+                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.stock.message}</p>
+                      )}
                     </div>
 
                     <div>
@@ -221,23 +211,26 @@ const CreateListingPage = () => {
                             variant="outline"
                             className={cn(
                               "w-full justify-start text-left font-normal",
-                              !formData.expiryDate && "text-muted-foreground"
+                              !form.watch("expiryDate") && "text-muted-foreground"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {formData.expiryDate ? format(formData.expiryDate, "PPP") : "Pick a date"}
+                            {form.watch("expiryDate") ? format(form.watch("expiryDate")!, "PPP") : "Pick a date"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
                           <Calendar
                             mode="single"
-                            selected={formData.expiryDate}
-                            onSelect={(date) => handleInputChange("expiryDate", date)}
+                            selected={form.watch("expiryDate")}
+                            onSelect={(date) => form.setValue("expiryDate", date)}
                             initialFocus
                             disabled={(date) => date < new Date()}
                           />
                         </PopoverContent>
                       </Popover>
+                      {form.formState.errors.expiryDate && (
+                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.expiryDate.message}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -251,10 +244,11 @@ const CreateListingPage = () => {
                     <Input
                       id="store"
                       placeholder="e.g., Baker's Corner"
-                      value={formData.store}
-                      onChange={(e) => handleInputChange("store", e.target.value)}
-                      required
+                      {...form.register("store")}
                     />
+                    {form.formState.errors.store && (
+                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.store.message}</p>
+                    )}
                   </div>
 
                   <div>
@@ -262,24 +256,39 @@ const CreateListingPage = () => {
                     <Input
                       id="image"
                       placeholder="https://example.com/image.jpg"
-                      value={formData.image}
-                      onChange={(e) => handleInputChange("image", e.target.value)}
+                      {...form.register("image")}
                     />
+                    {form.formState.errors.image && (
+                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.image.message}</p>
+                    )}
                   </div>
                 </div>
 
                 {/* Submit Button */}
                 <div className="flex justify-end space-x-4 pt-6">
-                  <Button type="button" variant="outline">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => form.reset()}
+                  >
                     Cancel
                   </Button>
                   <Button 
                     type="submit" 
-                    disabled={!isFormValid || isSubmitting}
+                    disabled={isSubmitting}
                     className="bg-gradient-accent hover:shadow-soft"
                   >
-                    <Save className="h-4 w-4 mr-2" />
-                    {isSubmitting ? "Creating..." : "Create Listing"}
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Create Listing
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>

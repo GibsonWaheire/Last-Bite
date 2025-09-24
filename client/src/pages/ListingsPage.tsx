@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import FoodListingCard from "@/components/FoodListingCard";
 import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Grid, List } from "lucide-react";
+import { Search, Filter, Grid, List, Loader2 } from "lucide-react";
+import { FoodCardSkeleton } from "@/components/Skeletons";
+import { ErrorBoundary, FoodGridErrorFallback } from "@/components/ErrorBoundary";
+import { toast } from "sonner";
 import breadImage from "@/assets/bread.jpg";
 import vegetablesImage from "@/assets/vegetables.jpg";
 import dairyImage from "@/assets/dairy.jpg";
@@ -14,6 +17,8 @@ const ListingsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const mockFoodItems = [
     {
@@ -90,6 +95,32 @@ const ListingsPage = () => {
     }
   ];
 
+  // Simulate loading data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Simulate occasional errors (10% chance)
+        if (Math.random() < 0.1) {
+          throw new Error("Failed to load food listings");
+        }
+        
+        setIsLoading(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+        setIsLoading(false);
+        toast.error("Failed to load food listings");
+      }
+    };
+
+    loadData();
+  }, []);
+
   const categories = ["all", "Bakery", "Produce", "Dairy"];
 
   const filteredItems = mockFoodItems.filter(item => {
@@ -101,7 +132,15 @@ const ListingsPage = () => {
 
   const handleAddToCart = (id: string) => {
     console.log(`Added item ${id} to cart`);
+    toast.success("Item added to cart!");
     // TODO: Implement cart functionality
+  };
+
+  const retryLoad = () => {
+    setError(null);
+    setIsLoading(true);
+    // Trigger useEffect to reload
+    window.location.reload();
   };
 
   return (
@@ -170,37 +209,63 @@ const ListingsPage = () => {
         </div>
 
         {/* Food Listings Grid */}
-        <div className={`grid gap-6 ${
-          viewMode === "grid" 
-            ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" 
-            : "grid-cols-1"
-        }`}>
-          {filteredItems.map((item) => (
-            <FoodListingCard 
-              key={item.id} 
-              {...item} 
-              onAddToCart={handleAddToCart}
-            />
-          ))}
-        </div>
+        <ErrorBoundary fallback={FoodGridErrorFallback}>
+          {isLoading ? (
+            <div className={`grid gap-6 ${
+              viewMode === "grid" 
+                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" 
+                : "grid-cols-1"
+            }`}>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <FoodCardSkeleton key={index} />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <Filter className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Failed to load listings</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={retryLoad}>
+                <Loader2 className="h-4 w-4 mr-2" />
+                Try Again
+              </Button>
+            </div>
+          ) : (
+            <div className={`grid gap-6 ${
+              viewMode === "grid" 
+                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" 
+                : "grid-cols-1"
+            }`}>
+              {filteredItems.map((item) => (
+                <FoodListingCard 
+                  key={item.id} 
+                  {...item} 
+                  onAddToCart={handleAddToCart}
+                />
+              ))}
+            </div>
+          )}
 
-        {/* No Results */}
-        {filteredItems.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-lg text-muted-foreground mb-4">
-              No food items found matching your criteria
-            </p>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedCategory("all");
-              }}
-            >
-              Clear Filters
-            </Button>
-          </div>
-        )}
+          {/* No Results */}
+          {!isLoading && !error && filteredItems.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-lg text-muted-foreground mb-4">
+                No food items found matching your criteria
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedCategory("all");
+                }}
+              >
+                Clear Filters
+              </Button>
+            </div>
+          )}
+        </ErrorBoundary>
       </div>
 
       <Footer />

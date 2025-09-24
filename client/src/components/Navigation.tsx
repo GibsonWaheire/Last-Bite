@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Store, Heart, User } from "lucide-react";
+import { ShoppingCart, Store, Heart, User, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 const Navigation = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -26,21 +29,87 @@ const Navigation = () => {
         </div>
         
         <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="icon">
-            <ShoppingCart className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Store className="h-5 w-5" />
-          </Button>
-          <Button variant="outline">
-            <User className="h-4 w-4 mr-2" />
-            Sign In
-          </Button>
-          <Button className="bg-gradient-hero hover:shadow-glow transition-all duration-300">
-            Get Started
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center space-x-3">
+            <Button variant="ghost" size="icon">
+              <ShoppingCart className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon">
+              <Store className="h-5 w-5" />
+            </Button>
+            <Button variant="outline">
+              <User className="h-4 w-4 mr-2" />
+              Sign In
+            </Button>
+            <Button className="bg-gradient-hero hover:shadow-glow transition-all duration-300">
+              Get Started
+            </Button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </Button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t bg-card/95 backdrop-blur-sm">
+          <div className="container mx-auto px-4 py-4 space-y-4">
+            <div className="space-y-2">
+              <Link 
+                to="/listings" 
+                className="block py-2 text-foreground hover:text-fresh transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Browse Food
+              </Link>
+              <Link 
+                to="/create-listing" 
+                className="block py-2 text-foreground hover:text-fresh transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                For Stores
+              </Link>
+              <Link 
+                to="/purchases" 
+                className="block py-2 text-foreground hover:text-fresh transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                My Purchases
+              </Link>
+            </div>
+            
+            <div className="pt-4 border-t space-y-2">
+              <Button variant="ghost" className="w-full justify-start">
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Cart
+              </Button>
+              <Button variant="ghost" className="w-full justify-start">
+                <Store className="h-4 w-4 mr-2" />
+                Stores
+              </Button>
+              <Button variant="outline" className="w-full">
+                <User className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+              <Button className="w-full bg-gradient-hero hover:shadow-glow transition-all duration-300">
+                Get Started
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
