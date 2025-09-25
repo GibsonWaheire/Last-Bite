@@ -21,6 +21,11 @@ def create_app():
     app.register_blueprint(user_bp, url_prefix="/api/users")
     app.register_blueprint(purchase_bp, url_prefix="/api/purchases")
 
+    @app.route("/")
+    def home():
+        return "Last Bite Rescue API is running!"
+
+
     return app
 
 
