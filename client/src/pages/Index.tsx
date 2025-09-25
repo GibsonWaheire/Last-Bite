@@ -1,24 +1,3 @@
-<<<<<<< Updated upstream
-import Navigation from "@/components/Navigation";
-import HeroSection from "@/components/HeroSection";
-import FoodGrid from "@/components/FoodGrid";
-import FeaturesSection from "@/components/FeaturesSection";
-import Footer from "@/components/Footer";
-
-const Index = () => {
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <HeroSection />
-      <FoodGrid />
-      <FeaturesSection />
-      <Footer />
-    </div>
-  );
-};
-
-export default Index;
-=======
 import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
@@ -28,7 +7,7 @@ import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Clock, Zap, AlertTriangle, MapPin } from "lucide-react";
+import { Search, Clock, Zap, AlertTriangle } from "lucide-react";
 import { StaggeredContainer } from "@/components/animations";
 import { useCartActions } from "@/contexts/CartContext";
 import { toast } from "sonner";
@@ -138,8 +117,8 @@ const Index = () => {
 
   const filteredItems = mockFoodItems.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.store.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description?.toLowerCase().includes(searchTerm.toLowerCase());
+                          item.store.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
     
     // Urgency filtering
@@ -301,4 +280,3 @@ const Index = () => {
 };
 
 export default Index;
->>>>>>> Stashed changes
