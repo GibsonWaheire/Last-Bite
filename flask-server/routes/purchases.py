@@ -1,103 +1,67 @@
 from flask import Blueprint, jsonify, request
-from extensions import db
 from models import Purchase, User, FoodListing
-from flask_marshmallow import Marshmallow
-from datetime import datetime
+from extensions import db
 
 purchase_bp = Blueprint("purchases", __name__)
-ma = Marshmallow()
 
-# Marshmallow schema
-class PurchaseSchema(ma.SQLAlchemyAutoSchema):
-    class Meta:
-        model = Purchase
-        include_fk = True
-        load_instance = True
-
-purchase_schema = PurchaseSchema()
-purchases_schema = PurchaseSchema(many=True)
-
-# GET /api/purchases - fetch all purchases
+# GET all purchases
 @purchase_bp.route("/", methods=["GET"])
 def get_purchases():
     purchases = Purchase.query.all()
-    return jsonify({"message": "All purchases", "data": purchases_schema.dump(purchases)}), 200
+    data = [{"id": p.id, "user_id": p.user_id, "food_id": p.food_id,
+             "quantity_bought": getattr(p, "quantity_bought", None)} for p in purchases]
+    return jsonify({"message": "All purchases", "data": data})
 
-# GET /api/purchases/<id> - fetch single purchase
+# GET single purchase
 @purchase_bp.route("/<int:purchase_id>", methods=["GET"])
 def get_purchase(purchase_id):
-    purchase = Purchase.query.get_or_404(purchase_id)
-    return jsonify({"message": f"Purchase {purchase_id}", "data": purchase_schema.dump(purchase)}), 200
+    p = Purchase.query.get(purchase_id)
+    if not p:
+        return jsonify({"message": "Purchase not found"}), 404
+    data = {"id": p.id, "user_id": p.user_id, "food_id": p.food_id,
+            "quantity_bought": getattr(p, "quantity_bought", None)}
+    return jsonify({"message": f"Purchase {purchase_id}", "data": data})
 
-# POST /api/purchases - create new purchase
+# POST create purchase
 @purchase_bp.route("/", methods=["POST"])
 def create_purchase():
     data = request.json
-    user_id = data.get("user_id")
-    food_id = data.get("food_id")
+    user = User.query.get(data.get("user_id"))
+    food = FoodListing.query.get(data.get("food_id"))
     quantity = data.get("quantity_bought", 1)
 
-    # Validate required fields
-    if not user_id or not food_id:
-        return jsonify({"error": "user_id and food_id are required"}), 400
-
-    # Check user exists
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"error": f"User {user_id} does not exist"}), 404
-
-    # Check food exists
-    food = FoodListing.query.get(food_id)
-    if not food:
-        return jsonify({"error": f"Food item {food_id} does not exist"}), 404
-
-    # Check stock
-    if quantity > food.stock:
-        return jsonify({"error": f"Not enough stock. Available: {food.stock}"}), 400
+    if not user or not food:
+        return jsonify({"message": "User or Food not found"}), 404
+    if quantity > getattr(food, "stock", 1):
+        return jsonify({"message": "Not enough stock"}), 400
 
     # Reduce stock
-    food.stock -= quantity
+    if hasattr(food, "stock"):
+        food.stock -= quantity
 
-    # Create purchase
-    purchase = Purchase(
-        user_id=user_id,
-        food_id=food_id,
-        quantity_bought=quantity,
-        purchase_date=datetime.utcnow()
-    )
-
+    purchase = Purchase(user_id=user.id, food_id=food.id)
+    setattr(purchase, "quantity_bought", quantity)
     db.session.add(purchase)
     db.session.commit()
+    return jsonify({"message": "Purchase created", "data": {"id": purchase.id, "user_id": user.id, "food_id": food.id, "quantity_bought": quantity}}), 201
 
-    return jsonify({"message": "Purchase created", "data": purchase_schema.dump(purchase)}), 201
-
-# PUT /api/purchases/<id> - update purchase (optional)
+# PUT update purchase
 @purchase_bp.route("/<int:purchase_id>", methods=["PUT"])
 def update_purchase(purchase_id):
-    purchase = Purchase.query.get_or_404(purchase_id)
+    purchase = Purchase.query.get(purchase_id)
+    if not purchase:
+        return jsonify({"message": "Purchase not found"}), 404
     data = request.json
-    quantity = data.get("quantity_bought", purchase.quantity_bought)
-
-    food = FoodListing.query.get(purchase.food_id)
-    # Adjust stock if quantity changes
-    stock_change = quantity - purchase.quantity_bought
-    if stock_change > food.stock:
-        return jsonify({"error": f"Not enough stock to update. Available: {food.stock}"}), 400
-
-    purchase.quantity_bought = quantity
-    food.stock -= stock_change
-
+    purchase.quantity_bought = data.get("quantity_bought", purchase.quantity_bought)
     db.session.commit()
-    return jsonify({"message": f"Purchase {purchase_id} updated", "data": purchase_schema.dump(purchase)}), 200
+    return jsonify({"message": f"Purchase {purchase_id} updated", "data": {"id": purchase.id, "user_id": purchase.user_id, "food_id": purchase.food_id, "quantity_bought": purchase.quantity_bought}})
 
-# DELETE /api/purchases/<id> - delete purchase
+# DELETE purchase
 @purchase_bp.route("/<int:purchase_id>", methods=["DELETE"])
 def delete_purchase(purchase_id):
-    purchase = Purchase.query.get_or_404(purchase_id)
-    food = FoodListing.query.get(purchase.food_id)
-    # Restore stock
-    food.stock += purchase.quantity_bought
-
+    purchase = Purchase.query.get(purchase_id)
+    if not purchase:
+        return jsonify({"message": "Purchase not found"}), 404
     db.session.delete(purchase)
     db.session.commit()
-    return jsonify({"message": f"Purchase {purchase_id} deleted"}), 200
+    return jsonify({"message": f"Purchase {purchase_id} deleted"})
