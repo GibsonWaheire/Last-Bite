@@ -7,15 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Mail, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
-import { initializeApp } from "firebase/app";
+// import { initializeApp } from "firebase/app";
+import { auth }  from "../firebase-config";
 
 // Declare global variables for TypeScript to recognize them
 declare const __firebase_config: string;
 declare const __initial_auth_token: string;
 
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+// const app = initializeApp(firebaseConfig);
+// const auth = getAuth(app);
 
 const SignInPage = () => {
   const [email, setEmail] = useState("");

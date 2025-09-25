@@ -3,11 +3,11 @@
 // Import the core functions
 import { initializeApp } from "firebase/app";
 
-// 1. IMPORT THE AUTHENTICATION SDK
+//IMPORT THE AUTHENTICATION SDK
 import { getAuth } from "firebase/auth"; 
 import { getAnalytics } from "firebase/analytics";
 
-// Your web app's Firebase configuration
+// web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCIv7B1kpPSb4nDkhwEvBVE4S3fX1YdmqU",
   authDomain: "biteme-e4144.firebaseapp.com",
@@ -22,7 +22,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-// 2. INITIALIZE AND EXPORT THE AUTH SERVICE
+//  INITIALIZE AND EXPORT THE AUTH SERVICE
 export const auth = getAuth(app); // <--- Add this line!
 // export const db = getFirestore(app); // (Add this if you need Firestore later)
 
