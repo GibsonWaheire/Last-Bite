@@ -30,5 +30,8 @@
     "typescript"
   ],
   "author": "Last Bite Rescue",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "firebase": "^12.3.0"
+  }
 }
