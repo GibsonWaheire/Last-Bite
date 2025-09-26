@@ -1,47 +1,92 @@
-import express from 'express';
+import express from "express";
+import FoodListing from "../models/FoodListing.js";
+import Store from "../models/Store.js";
 
 const router = express.Router();
 
-// GET /api/foods - Get all available food items
-router.get('/', (req, res) => {
-  res.json({ 
-    message: 'Food items endpoint',
-    data: [] // Will be replaced with actual data
-  });
+// Create a new food item
+router.post("/", async (req, res) => {
+  try {
+    const { name, description, quantity, price, storeId } = req.body;
+
+    // ensure store exists
+    const store = await Store.findById(storeId);
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const food = new FoodListing({
+      name,
+      description,
+      quantity,
+      price,
+      store: storeId,
+    });
+
+    const savedFood = await food.save();
+
+    // push food into store
+    store.foods.push(savedFood._id);
+    await store.save();
+
+    res.status(201).json(savedFood);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
-// GET /api/foods/:id - Get specific food item
-router.get('/:id', (req, res) => {
-  const { id } = req.params;
-  res.json({ 
-    message: `Food item ${id}`,
-    data: null // Will be replaced with actual data
-  });
+// Get all food items
+router.get("/", async (req, res) => {
+  try {
+    const foods = await FoodListing.find().populate("store");
+    res.json(foods);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// POST /api/foods - Create new food item
-router.post('/', (req, res) => {
-  res.json({ 
-    message: 'Food item created',
-    data: req.body
-  });
+// Get a single food by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const food = await FoodListing.findById(req.params.id).populate("store");
+    if (!food) return res.status(404).json({ error: "Food not found" });
+    res.json(food);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// PUT /api/foods/:id - Update food item
-router.put('/:id', (req, res) => {
-  const { id } = req.params;
-  res.json({ 
-    message: `Food item ${id} updated`,
-    data: req.body
-  });
+// Update a food
+router.put("/:id", async (req, res) => {
+  try {
+    const updatedFood = await FoodListing.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    if (!updatedFood) return res.status(404).json({ error: "Food not found" });
+    res.json(updatedFood);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
-// DELETE /api/foods/:id - Delete food item
-router.delete('/:id', (req, res) => {
-  const { id } = req.params;
-  res.json({ 
-    message: `Food item ${id} deleted`
-  });
+// Delete a food
+router.delete("/:id", async (req, res) => {
+  try {
+    const deletedFood = await FoodListing.findByIdAndDelete(req.params.id);
+    if (!deletedFood) return res.status(404).json({ error: "Food not found" });
+
+    // also remove from store
+    await Store.updateOne(
+      { foods: deletedFood._id },
+      { $pull: { foods: deletedFood._id } }
+    );
+
+    res.json({ message: "Food deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;
