@@ -32,6 +32,7 @@
   "author": "Last Bite Rescue",
   "license": "MIT",
   "dependencies": {
+    "database": "^0.0.2",
     "firebase": "^12.3.0",
     "formik": "^2.4.6",
     "lucide-react": "^0.544.0",

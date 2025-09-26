@@ -1,7 +1,7 @@
 // This file centralizes all API calls to your backend.
 // Replace the mock URLs with your actual backend endpoints.
 
-const API_BASE_URL = "https://your-backend-api.com/api";
+const API_BASE_URL = "https://localhost:3000";
 
 const handleResponse = async (response) => {
   if (!response.ok) {

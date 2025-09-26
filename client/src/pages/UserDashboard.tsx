@@ -1,24 +1,25 @@
 import { useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
-import { initializeApp } from "firebase/app";
+// import { initializeApp } from "firebase/app";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { auth } from "../firebase-config";
 import { LogOut, Plus } from "lucide-react";
 // Update the import path to the correct location of your API functions
 // Update the import path to the correct location of your API functions
 // Update the import path below to the correct location of your API functions
 // Update the import path below to the correct location of your API functions
-import { fetchListings, fetchPurchaseHistory } from "../api/CreateListingPage";
+import { fetchListings, fetchPurchaseHistory } from "../API/api.js";
 
 // Declare global variables for TypeScript to recognize them
 declare const __firebase_config: string;
 declare const __initial_auth_token: string;
 
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+// const app = initializeApp(firebaseConfig);
+// const auth = getAuth(app);
 
 const UserDashboard = () => {
   const [user, setUser] = useState(null);
