@@ -9,6 +9,34 @@ export const userValidationSchema = Yup.object({
     .required('Name is required'),
 });
 
+// Authentication validation schemas
+export const signInValidationSchema = Yup.object({
+  email: Yup.string()
+    .email('Please enter a valid email address')
+    .required('Email is required'),
+  password: Yup.string()
+    .min(6, 'Password must be at least 6 characters')
+    .required('Password is required'),
+});
+
+export const signUpValidationSchema = Yup.object({
+  name: Yup.string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be less than 100 characters')
+    .matches(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces')
+    .required('Name is required'),
+  email: Yup.string()
+    .email('Please enter a valid email address')
+    .required('Email is required'),
+  password: Yup.string()
+    .min(6, 'Password must be at least 6 characters')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number')
+    .required('Password is required'),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref('password')], 'Passwords must match')
+    .required('Please confirm your password'),
+});
+
 // Food listing validation schema
 export const foodListingValidationSchema = Yup.object({
   name: Yup.string()
@@ -52,8 +80,22 @@ export const initialUserValues = {
   name: '',
 };
 
+export const initialSignInValues = {
+  email: '',
+  password: '',
+};
+
+export const initialSignUpValues = {
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+};
+
 export const initialFoodListingValues = {
   name: '',
+  description: '',
+  category: '',
   user_id: 1,
   stock: 1,
   price: 0.0,

@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Formik, Form, Field, ErrorMessage } from "formik";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,27 +13,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Upload, Plus, Save, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { foodListingSchema, type FoodListingFormData } from "@/lib/validations";
+import { foodListingValidationSchema, initialFoodListingValues } from "@/lib/validations";
 import { formatCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 
 const CreateListingPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<FoodListingFormData>({
-    resolver: zodResolver(foodListingSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      category: "",
-      originalPrice: "",
-      discountedPrice: "",
-      stock: "",
-      expiryDate: undefined,
-      store: "",
-      image: ""
-    }
-  });
 
   const categories = [
     "Bakery",
@@ -48,18 +32,18 @@ const CreateListingPage = () => {
     "Snacks"
   ];
 
-  const onSubmit = async (data: FoodListingFormData) => {
+  const onSubmit = async (values: typeof initialFoodListingValues, { resetForm }: { resetForm: () => void }) => {
     setIsSubmitting(true);
     
     try {
       // TODO: Implement API call to create listing
-      console.log("Creating listing:", data);
+      console.log("Creating listing:", values);
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Reset form
-      form.reset();
+      resetForm();
       
       toast.success("Food listing created successfully!");
     } catch (error) {
@@ -94,37 +78,41 @@ const CreateListingPage = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <Formik
+                initialValues={initialFoodListingValues}
+                validationSchema={foodListingValidationSchema}
+                onSubmit={onSubmit}
+              >
+                {({ values, setFieldValue, errors, touched }) => (
+                  <Form className="space-y-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="name">Food Item Name *</Label>
-                    <Input
+                    <Field
+                      as={Input}
                       id="name"
+                      name="name"
                       placeholder="e.g., Artisan Sourdough Bread"
-                      {...form.register("name")}
                     />
-                    {form.formState.errors.name && (
-                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
-                    )}
+                    <ErrorMessage name="name" component="p" className="text-sm text-red-500 mt-1" />
                   </div>
 
                   <div>
                     <Label htmlFor="description">Description</Label>
-                    <Textarea
+                    <Field
+                      as={Textarea}
                       id="description"
+                      name="description"
                       placeholder="Describe the food item, its quality, and any special features..."
-                      {...form.register("description")}
                       rows={3}
                     />
-                    {form.formState.errors.description && (
-                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.description.message}</p>
-                    )}
+                    <ErrorMessage name="description" component="p" className="text-sm text-red-500 mt-1" />
                   </div>
 
                   <div>
                     <Label htmlFor="category">Category *</Label>
-                    <Select value={form.watch("category")} onValueChange={(value) => form.setValue("category", value)}>
+                    <Select value={values.category} onValueChange={(value) => setFieldValue("category", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
@@ -136,9 +124,7 @@ const CreateListingPage = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {form.formState.errors.category && (
-                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.category.message}</p>
-                    )}
+                    <ErrorMessage name="category" component="p" className="text-sm text-red-500 mt-1" />
                   </div>
                 </div>
 
@@ -146,43 +132,19 @@ const CreateListingPage = () => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Pricing</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="originalPrice">Original Price (KES) *</Label>
-                      <Input
-                        id="originalPrice"
-                        type="number"
-                        step="1"
-                        min="0"
-                        placeholder="899"
-                        {...form.register("originalPrice")}
-                      />
-                      {form.formState.errors.originalPrice && (
-                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.originalPrice.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="discountedPrice">Discounted Price (KES) *</Label>
-                      <Input
-                        id="discountedPrice"
-                        type="number"
-                        step="1"
-                        min="0"
-                        placeholder="399"
-                        {...form.register("discountedPrice")}
-                      />
-                      {form.formState.errors.discountedPrice && (
-                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.discountedPrice.message}</p>
-                      )}
-                    </div>
+                  <div>
+                    <Label htmlFor="price">Price (KES) *</Label>
+                    <Field
+                      as={Input}
+                      id="price"
+                      name="price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="399.00"
+                    />
+                    <ErrorMessage name="price" component="p" className="text-sm text-red-500 mt-1" />
                   </div>
-
-                  {form.watch("originalPrice") && form.watch("discountedPrice") && (
-                    <div className="text-sm text-muted-foreground">
-                      Discount: {Math.round(((parseFloat(form.watch("originalPrice")) - parseFloat(form.watch("discountedPrice"))) / parseFloat(form.watch("originalPrice"))) * 100)}%
-                    </div>
-                  )}
                 </div>
 
                 {/* Inventory & Expiry */}
@@ -192,76 +154,62 @@ const CreateListingPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="stock">Stock Quantity *</Label>
-                      <Input
+                      <Field
+                        as={Input}
                         id="stock"
+                        name="stock"
                         type="number"
                         min="1"
                         placeholder="12"
-                        {...form.register("stock")}
                       />
-                      {form.formState.errors.stock && (
-                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.stock.message}</p>
-                      )}
+                      <ErrorMessage name="stock" component="p" className="text-sm text-red-500 mt-1" />
                     </div>
 
                     <div>
-                      <Label>Expiry Date *</Label>
+                      <Label>Expiry Date</Label>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             className={cn(
                               "w-full justify-start text-left font-normal",
-                              !form.watch("expiryDate") && "text-muted-foreground"
+                              !values.expiry_date && "text-muted-foreground"
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {form.watch("expiryDate") ? format(form.watch("expiryDate")!, "PPP") : "Pick a date"}
+                            {values.expiry_date ? format(new Date(values.expiry_date), "PPP") : "Pick a date"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
                           <Calendar
                             mode="single"
-                            selected={form.watch("expiryDate")}
-                            onSelect={(date) => form.setValue("expiryDate", date)}
+                            selected={values.expiry_date ? new Date(values.expiry_date) : undefined}
+                            onSelect={(date) => setFieldValue("expiry_date", date)}
                             initialFocus
                             disabled={(date) => date < new Date()}
                           />
                         </PopoverContent>
                       </Popover>
-                      {form.formState.errors.expiryDate && (
-                        <p className="text-sm text-red-500 mt-1">{form.formState.errors.expiryDate.message}</p>
-                      )}
+                      <ErrorMessage name="expiry_date" component="p" className="text-sm text-red-500 mt-1" />
                     </div>
                   </div>
                 </div>
 
-                {/* Store Information */}
+                {/* User Information */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Store Information</h3>
+                  <h3 className="text-lg font-semibold">User Information</h3>
                   
                   <div>
-                    <Label htmlFor="store">Store Name *</Label>
-                    <Input
-                      id="store"
-                      placeholder="e.g., Baker's Corner"
-                      {...form.register("store")}
+                    <Label htmlFor="user_id">User ID *</Label>
+                    <Field
+                      as={Input}
+                      id="user_id"
+                      name="user_id"
+                      type="number"
+                      min="1"
+                      placeholder="1"
                     />
-                    {form.formState.errors.store && (
-                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.store.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="image">Image URL</Label>
-                    <Input
-                      id="image"
-                      placeholder="https://example.com/image.jpg"
-                      {...form.register("image")}
-                    />
-                    {form.formState.errors.image && (
-                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.image.message}</p>
-                    )}
+                    <ErrorMessage name="user_id" component="p" className="text-sm text-red-500 mt-1" />
                   </div>
                 </div>
 
@@ -270,7 +218,7 @@ const CreateListingPage = () => {
                   <Button 
                     type="button" 
                     variant="outline"
-                    onClick={() => form.reset()}
+                    onClick={() => window.location.reload()}
                   >
                     Cancel
                   </Button>
@@ -292,7 +240,9 @@ const CreateListingPage = () => {
                     )}
                   </Button>
                 </div>
-              </form>
+                  </Form>
+                )}
+              </Formik>
             </CardContent>
           </Card>
         </div>
