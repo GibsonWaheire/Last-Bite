@@ -1,3 +1,14 @@
+<<<<<<< HEAD
+from flask import Blueprint, request, jsonify
+from extensions import db
+from models import User
+from schemas import UserSchema, UserCreateSchema
+from marshmallow import ValidationError
+
+user_bp = Blueprint('users', __name__, url_prefix='/api/users')
+
+# Initialize schemas
+=======
 from flask import Blueprint, jsonify, request
 from models import User
 from extensions import db
@@ -5,6 +16,7 @@ from schemas import UserSchema, UserCreateSchema
 from marshmallow import ValidationError
 
 user_bp = Blueprint("users", __name__)
+>>>>>>> Gibson
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 user_create_schema = UserCreateSchema()
@@ -19,17 +31,31 @@ def get_users():
 
 @user_bp.route("/<int:user_id>", methods=["GET"])
 def get_user(user_id):
+<<<<<<< HEAD
+    user = User.query.get_or_404(user_id)
+    return jsonify({
+        "message": "User retrieved successfully",
+=======
     user = User.query.get(user_id)
     if not user:
         return jsonify({"message": "User not found"}), 404
     return jsonify({
         "message": f"User {user_id} retrieved successfully",
+>>>>>>> Gibson
         "data": user_schema.dump(user)
     }), 200
 
 @user_bp.route("/", methods=["POST"])
 def create_user():
     try:
+<<<<<<< HEAD
+        data = user_create_schema.load(request.json)
+        
+        user = User(**data)
+        db.session.add(user)
+        db.session.commit()
+        
+=======
         # Validate input data
         validated_data = user_create_schema.load(request.json)
     except ValidationError as err:
@@ -50,10 +76,71 @@ def create_user():
     try:
         db.session.add(user)
         db.session.commit()
+>>>>>>> Gibson
         return jsonify({
             "message": "User created successfully",
             "data": user_schema.dump(user)
         }), 201
+<<<<<<< HEAD
+        
+    except ValidationError as e:
+        return jsonify({
+            "message": "Validation error",
+            "errors": e.messages
+        }), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "message": "Failed to create user",
+            "errors": str(e)
+        }), 500
+
+@user_bp.route("/<int:user_id>", methods=["PUT"])
+def update_user(user_id):
+    try:
+        user = User.query.get_or_404(user_id)
+        data = user_create_schema.load(request.json, partial=True)
+        
+        for key, value in data.items():
+            setattr(user, key, value)
+        
+        db.session.commit()
+        
+        return jsonify({
+            "message": "User updated successfully",
+            "data": user_schema.dump(user)
+        }), 200
+        
+    except ValidationError as e:
+        return jsonify({
+            "message": "Validation error",
+            "errors": e.messages
+        }), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "message": "Failed to update user",
+            "errors": str(e)
+        }), 500
+
+@user_bp.route("/<int:user_id>", methods=["DELETE"])
+def delete_user(user_id):
+    try:
+        user = User.query.get_or_404(user_id)
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "User deleted successfully"
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "message": "Failed to delete user",
+            "errors": str(e)
+        }), 500
+=======
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "Failed to create user"}), 500
@@ -176,3 +263,4 @@ def sync_firebase_user():
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "Failed to sync user with Firebase"}), 500
+>>>>>>> Gibson
