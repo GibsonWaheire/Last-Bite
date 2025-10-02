@@ -5,15 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ShoppingCart, Plus, Minus, Trash2, CreditCard } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, CreditCard, LogIn } from "lucide-react";
 import { useCart, useCartActions } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/currency";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Cart = () => {
   const { state } = useCart();
   const { updateQuantity, removeFromCart, clearCart } = useCartActions();
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleQuantityChange = (id: string, newQuantity: number) => {
@@ -25,9 +28,16 @@ const Cart = () => {
   };
 
   const handleCheckout = () => {
-    // TODO: Implement checkout process
-    toast.success("Checkout functionality coming soon!");
-    setIsOpen(false);
+    if (currentUser) {
+      // User is authenticated, go to dashboard cart tab
+      navigate('/user-dashboard?tab=cart');
+      setIsOpen(false);
+    } else {
+      // User is not authenticated, redirect to sign in
+      toast.info("Please sign in to complete your purchase");
+      navigate('/signin');
+      setIsOpen(false);
+    }
   };
 
   return (
@@ -153,12 +163,19 @@ const Cart = () => {
                 
                 <Button 
                   className="w-full bg-gradient-accent hover:shadow-soft"
-                  asChild
+                  onClick={handleCheckout}
                 >
-                  <Link to="/user-dashboard" onClick={() => setIsOpen(false)}>
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Go to Dashboard
-                  </Link>
+                  {currentUser ? (
+                    <>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Proceed to Checkout
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Sign In to Continue
+                    </>
+                  )}
                 </Button>
               </div>
             </>

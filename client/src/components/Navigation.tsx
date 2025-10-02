@@ -1,11 +1,28 @@
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Store, Heart, User, Menu, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ShoppingCart, Store, Heart, User, Menu, X, LogOut } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Cart from "./Cart";
+import { useAuth } from "@/contexts/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase-config";
+import { toast } from "sonner";
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { currentUser, userRole } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast.success("Signed out successfully");
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out");
+    }
+  };
 
   return (
     <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50 animate-in slide-in-from-top-2 duration-500">
@@ -33,13 +50,34 @@ const Navigation = () => {
             <Button variant="ghost" size="icon">
               <Store className="h-5 w-5" />
             </Button>
-            <Button variant="outline">
-              <User className="h-4 w-4 mr-2" />
-              Sign In
-            </Button>
-            <Button className="bg-gradient-hero hover:shadow-glow transition-all duration-300">
-              Get Started
-            </Button>
+            {currentUser ? (
+              <>
+                <Button variant="outline" asChild>
+                  <Link to={userRole === 'store_owner' ? '/store-dashboard' : userRole === 'admin' ? '/admin-dashboard' : '/user-dashboard'}>
+                    <User className="h-4 w-4 mr-2" />
+                    {userRole === 'store_owner' ? 'Store Dashboard' : userRole === 'admin' ? 'Admin Dashboard' : 'Dashboard'}
+                  </Link>
+                </Button>
+                <Button variant="ghost" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" asChild>
+                  <Link to="/signin">
+                    <User className="h-4 w-4 mr-2" />
+                    Sign In
+                  </Link>
+                </Button>
+                <Button className="bg-gradient-hero hover:shadow-glow transition-all duration-300" asChild>
+                  <Link to="/signup">
+                    Get Started
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -87,13 +125,34 @@ const Navigation = () => {
                 <Store className="h-4 w-4 mr-2" />
                 Stores
               </Button>
-              <Button variant="outline" className="w-full">
-                <User className="h-4 w-4 mr-2" />
-                Sign In
-              </Button>
-              <Button className="w-full bg-gradient-hero hover:shadow-glow transition-all duration-300">
-                Get Started
-              </Button>
+              {currentUser ? (
+                <>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link to={userRole === 'store_owner' ? '/store-dashboard' : userRole === 'admin' ? '/admin-dashboard' : '/user-dashboard'} onClick={() => setIsMobileMenuOpen(false)}>
+                      <User className="h-4 w-4 mr-2" />
+                      {userRole === 'store_owner' ? 'Store Dashboard' : userRole === 'admin' ? 'Admin Dashboard' : 'Dashboard'}
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link to="/signin" onClick={() => setIsMobileMenuOpen(false)}>
+                      <User className="h-4 w-4 mr-2" />
+                      Sign In
+                    </Link>
+                  </Button>
+                  <Button className="w-full bg-gradient-hero hover:shadow-glow transition-all duration-300" asChild>
+                    <Link to="/signup" onClick={() => setIsMobileMenuOpen(false)}>
+                      Get Started
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

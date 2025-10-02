@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,21 +23,61 @@ import {
   Menu,
   X,
   Settings,
-  Gift
+  Gift,
+  CreditCard,
+  CheckCircle,
+  Plus,
+  Minus,
+  Trash2,
+  LogOut
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { formatCurrency } from "@/lib/currency";
 import PurchaseHistoryCard from "@/components/PurchaseHistoryCard";
-import { useCart } from "@/contexts/CartContext";
+import { useCart, useCartActions } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase-config";
 import { toast } from "sonner";
+import { purchaseApi } from "@/lib/api";
 import breadImage from "@/assets/bread.jpg";
 import vegetablesImage from "@/assets/vegetables.jpg";
 import dairyImage from "@/assets/dairy.jpg";
 
 const UserDashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("cart");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { state: cartState } = useCart();
+  const { updateQuantity, removeFromCart, clearCart } = useCartActions();
+  const [searchParams] = useSearchParams();
+  const { currentUser, backendUser } = useAuth();
+  const navigate = useNavigate();
+
+  // Handle URL parameter for tab selection
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['cart', 'overview', 'purchases', 'favorites', 'achievements', 'settings'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/signin');
+    }
+  }, [currentUser, navigate]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast.success("Signed out successfully");
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out");
+    }
+  };
 
   // Calculate user stats from cart data
   const userStats = {
@@ -106,6 +146,56 @@ const UserDashboard = () => {
     }
   ];
 
+  // Cart handlers
+  const handleUpdateQuantity = (id: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromCart(id);
+      toast.success("Item removed from cart");
+    } else {
+      updateQuantity(id, newQuantity);
+      toast.success("Cart updated");
+    }
+  };
+
+  const handleRemoveItem = (id: string) => {
+    removeFromCart(id);
+    toast.success("Item removed from cart");
+  };
+
+  const handleCheckout = async () => {
+    if (cartState.items.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+    
+    if (!currentUser) {
+      toast.error("Please sign in to complete your purchase");
+      return;
+    }
+
+    try {
+      toast.success("Proceeding to checkout...");
+      
+      // Create purchase records for each item in cart
+      for (const item of cartState.items) {
+        await purchaseApi.createPurchase({
+          user_id: backendUser?.id || 1, // Use backend user ID if available
+          food_id: parseInt(item.id),
+          quantity_bought: item.quantity,
+          purchase_date: new Date().toISOString()
+        });
+      }
+
+      // Clear cart after successful purchase
+      clearCart();
+      toast.success("Purchase completed successfully!");
+      setActiveTab("purchases");
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast.error("Failed to complete purchase. Please try again.");
+    }
+  };
+
   // Functional handlers
   const handleViewProfile = () => {
     toast.info("Profile settings would open here");
@@ -146,6 +236,14 @@ const UserDashboard = () => {
           
           <nav className="p-4 space-y-2">
             <Button
+              variant={activeTab === "cart" ? "default" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setActiveTab("cart")}
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              My Cart ({cartState.items.length})
+            </Button>
+            <Button
               variant={activeTab === "overview" ? "default" : "ghost"}
               className="w-full justify-start"
               onClick={() => setActiveTab("overview")}
@@ -158,7 +256,7 @@ const UserDashboard = () => {
               className="w-full justify-start"
               onClick={() => setActiveTab("purchases")}
             >
-              <ShoppingCart className="h-4 w-4 mr-2" />
+              <Package className="h-4 w-4 mr-2" />
               My Purchases
             </Button>
             <Button
@@ -184,6 +282,14 @@ const UserDashboard = () => {
             >
               <Settings className="h-4 w-4 mr-2" />
               Settings
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
             </Button>
           </nav>
           
@@ -306,6 +412,149 @@ const UserDashboard = () => {
         </div>
 
         {/* Content based on active tab */}
+        {activeTab === "cart" && (
+          <div className="space-y-6">
+            {/* Cart Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold">Shopping Cart</h2>
+                <p className="text-muted-foreground">
+                  Review your items and proceed to checkout
+                </p>
+              </div>
+              {cartState.items.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => clearCart()}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear Cart
+                </Button>
+              )}
+            </div>
+
+            {cartState.items.length === 0 ? (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <ShoppingCart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Your cart is empty</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Start adding items to your cart to see them here.
+                  </p>
+                  <Button asChild className="bg-gradient-hero hover:shadow-glow">
+                    <Link to="/listings">
+                      <Gift className="h-4 w-4 mr-2" />
+                      Browse Food Deals
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Cart Items */}
+                <div className="lg:col-span-2 space-y-4">
+                  {cartState.items.map((item) => (
+                    <Card key={item.id} className="p-4">
+                      <div className="flex items-center space-x-4">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-20 h-20 rounded-lg object-cover"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-lg">{item.name}</h4>
+                          <p className="text-sm text-muted-foreground">{item.store}</p>
+                          <div className="flex items-center space-x-2 mt-2">
+                            <span className="text-lg font-bold text-fresh">
+                              {formatCurrency(item.discountedPrice)}
+                            </span>
+                            {item.originalPrice > item.discountedPrice && (
+                              <span className="text-sm text-muted-foreground line-through">
+                                {formatCurrency(item.originalPrice)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <span className="w-8 text-center font-semibold">
+                            {item.quantity}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Order Summary */}
+                <div className="lg:col-span-1">
+                  <Card className="sticky top-4">
+                    <CardHeader>
+                      <CardTitle>Order Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex justify-between">
+                        <span>Items ({cartState.totalItems})</span>
+                        <span>{formatCurrency(cartState.totalPrice || 0)}</span>
+                      </div>
+                      <div className="flex justify-between text-green-600">
+                        <span>You Save</span>
+                        <span>{formatCurrency(cartState.totalSavings || 0)}</span>
+                      </div>
+                      <div className="border-t pt-4">
+                        <div className="flex justify-between text-lg font-bold">
+                          <span>Total</span>
+                          <span className="text-fresh">{formatCurrency(cartState.totalPrice || 0)}</span>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={handleCheckout}
+                        className="w-full bg-gradient-hero hover:shadow-glow"
+                        size="lg"
+                      >
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Proceed to Checkout
+                      </Button>
+                      <Button
+                        variant="outline"
+                        asChild
+                        className="w-full"
+                      >
+                        <Link to="/listings">
+                          <Gift className="h-4 w-4 mr-2" />
+                          Continue Shopping
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === "overview" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Recent Activity */}

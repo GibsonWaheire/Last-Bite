@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,15 +24,92 @@ import {
   Activity,
   Store as StoreIcon,
   Menu,
-  X
+  X,
+  ShoppingCart,
+  User,
+  LogOut
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { formatCurrency } from "@/lib/currency";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase-config";
+import { purchaseApi, foodApi, userApi } from "@/lib/api";
 
 const StoreDashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("orders");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { currentUser, userRole, backendUser } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if not authenticated or not a store owner
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/store-owner-signin');
+    } else if (userRole !== 'store_owner') {
+      toast.error("Access denied. This page is for store owners only.");
+      navigate('/');
+    }
+  }, [currentUser, userRole, navigate]);
+
+  // Fetch orders from backend
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!backendUser) return;
+      
+      try {
+        setLoading(true);
+        const purchases = await purchaseApi.getAllPurchases();
+        
+        // Filter purchases for this store owner's food listings
+        const storeOrders = purchases.filter((purchase: any) => {
+          // This would need to be enhanced to check if the food belongs to this store owner
+          return true; // For now, show all orders
+        });
+
+        // Transform purchases into order format
+        const transformedOrders = storeOrders.map((purchase: any, index: number) => ({
+          id: purchase.id,
+          customerName: `Customer ${purchase.user_id}`,
+          customerEmail: `customer${purchase.user_id}@example.com`,
+          items: [
+            {
+              name: `Food Item ${purchase.food_id}`,
+              quantity: purchase.quantity_bought,
+              price: 10.99 // This should come from the food listing
+            }
+          ],
+          total: purchase.quantity_bought * 10.99,
+          status: index % 3 === 0 ? 'pending' : index % 3 === 1 ? 'completed' : 'cancelled',
+          orderDate: new Date(purchase.purchase_date).toLocaleDateString(),
+          pickupTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString()
+        }));
+
+        setOrders(transformedOrders);
+      } catch (error) {
+        console.error('Failed to fetch orders:', error);
+        toast.error('Failed to load orders');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [backendUser]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast.success("Signed out successfully");
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out");
+    }
+  };
   const [listings, setListings] = useState([
     {
       id: "1",
@@ -69,20 +146,38 @@ const StoreDashboard = () => {
     }
   ]);
 
-  // Calculate stats from listings
+
+  // Calculate stats from listings and orders
   const storeStats = {
     totalListings: listings.length,
     activeListings: listings.filter(l => l.status === "active").length,
     soldItems: listings.reduce((sum, l) => sum + l.sold, 0),
-    totalRevenue: listings.reduce((sum, l) => sum + (l.discountedPrice * l.sold), 0),
+    totalRevenue: orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.total, 0),
     wasteReduced: listings.reduce((sum, l) => sum + (l.sold * 0.5), 0), // Estimate 0.5kg per item
-    avgDiscount: Math.round(listings.reduce((sum, l) => sum + ((l.originalPrice - l.discountedPrice) / l.originalPrice * 100), 0) / listings.length)
+    avgDiscount: Math.round(listings.reduce((sum, l) => sum + ((l.originalPrice - l.discountedPrice) / l.originalPrice * 100), 0) / listings.length),
+    totalOrders: orders.length,
+    pendingOrders: orders.filter(o => o.status === 'pending').length,
+    completedOrders: orders.filter(o => o.status === 'completed').length
   };
 
   const urgentItems = listings.filter(item => {
     const daysLeft = Math.ceil((new Date(item.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return daysLeft <= 2;
   });
+
+  // Order handlers
+  const handleUpdateOrderStatus = (orderId: string, newStatus: string) => {
+    setOrders(prev => prev.map(order => 
+      order.id === orderId ? { ...order, status: newStatus } : order
+    ));
+    const order = orders.find(o => o.id === orderId);
+    toast.success(`Order ${orderId} status updated to ${newStatus}`);
+  };
+
+  const handleViewOrder = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    toast.success(`Viewing order ${orderId} for ${order?.customerName}`);
+  };
 
   // Functional handlers
   const handleViewAnalytics = () => {
@@ -148,6 +243,14 @@ const StoreDashboard = () => {
           
           <nav className="p-4 space-y-2">
             <Button
+              variant={activeTab === "orders" ? "default" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setActiveTab("orders")}
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Orders ({storeStats.pendingOrders})
+            </Button>
+            <Button
               variant={activeTab === "overview" ? "default" : "ghost"}
               className="w-full justify-start"
               onClick={() => setActiveTab("overview")}
@@ -178,6 +281,14 @@ const StoreDashboard = () => {
             >
               <Settings className="h-4 w-4 mr-2" />
               Settings
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
             </Button>
           </nav>
           
@@ -246,24 +357,24 @@ const StoreDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{storeStats.activeListings}</div>
+              <div className="text-2xl font-bold">{storeStats.pendingOrders}</div>
               <p className="text-xs text-muted-foreground">
-                {storeStats.totalListings} total listings
+                {storeStats.totalOrders} total orders
               </p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Items Sold</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{storeStats.soldItems}</div>
+              <div className="text-2xl font-bold">{storeStats.completedOrders}</div>
               <p className="text-xs text-muted-foreground">
                 This month
               </p>
@@ -278,20 +389,20 @@ const StoreDashboard = () => {
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(storeStats.totalRevenue)}</div>
               <p className="text-xs text-muted-foreground">
-                From food rescue sales
+                From completed orders
               </p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Waste Reduced</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{storeStats.wasteReduced}kg</div>
+              <div className="text-2xl font-bold">{storeStats.activeListings}</div>
               <p className="text-xs text-muted-foreground">
-                Food saved from waste
+                {storeStats.totalListings} total listings
               </p>
             </CardContent>
           </Card>
@@ -330,6 +441,112 @@ const StoreDashboard = () => {
         )}
 
         {/* Content based on active tab */}
+        {activeTab === "orders" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold">Customer Orders</h2>
+                <p className="text-muted-foreground">
+                  Manage customer orders and track fulfillment
+                </p>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-gray-500">Loading orders...</div>
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
+                <p className="text-gray-500">Orders from customers will appear here once they make purchases.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6">
+                {orders.map((order) => (
+                <Card key={order.id} className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <h3 className="text-lg font-semibold">Order #{order.id}</h3>
+                        <Badge 
+                          variant={order.status === 'completed' ? 'default' : order.status === 'pending' ? 'secondary' : 'destructive'}
+                        >
+                          {order.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Customer</p>
+                          <p className="font-medium">{order.customerName}</p>
+                          <p className="text-sm text-muted-foreground">{order.customerEmail}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Order Details</p>
+                          <p className="font-medium">Total: {formatCurrency(order.total)}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Ordered: {new Date(order.orderDate).toLocaleDateString()}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Pickup: {new Date(order.pickupTime).toLocaleDateString()} at {new Date(order.pickupTime).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Items</p>
+                        <div className="space-y-1">
+                          {order.items.map((item, index) => (
+                            <div key={index} className="flex justify-between text-sm">
+                              <span>{item.quantity}x {item.name}</span>
+                              <span>{formatCurrency(item.price * item.quantity)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col space-y-2 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewOrder(order.id)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      
+                      {order.status === 'pending' && (
+                        <>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Complete
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Cancel
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === "overview" && (
             <Card>
               <CardHeader>
