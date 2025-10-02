@@ -140,7 +140,7 @@ def sync_firebase_user():
         # Check if user exists by email
         existing_email_user = User.query.filter_by(email=email).first()
         if existing_email_user:
-            # Update existing user with Firebase UID
+            # Update existing user with Firebase UID (preserve existing role)
             existing_email_user.firebase_uid = firebase_uid
             db.session.commit()
             return jsonify({
@@ -148,7 +148,8 @@ def sync_firebase_user():
                 "data": user_schema.dump(existing_email_user)
             }), 200
         
-        # Determine role based on email
+        # For new users, determine role based on email (this is only for legacy compatibility)
+        # Note: Frontend should call createUser API first for proper role assignment
         if email.endswith('@store.'):
             role = 'store_owner'
         elif email.endswith('@admin.'):

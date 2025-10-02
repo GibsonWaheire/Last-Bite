@@ -63,8 +63,8 @@ const SignUpPage = () => {
         role: 'customer',
         firebase_uid: cred.user.uid,
       });
-      toast.success("Account created. Welcome!");
-      navigate("/user-dashboard");
+      toast.success("Account created successfully! Please sign in to continue.");
+      navigate("/signin?role=customer");
     } catch (error: unknown) {
       console.error("Customer sign-up error:", error);
       let errorMessage = "An unexpected error occurred during registration.";
@@ -103,8 +103,8 @@ const SignUpPage = () => {
         role: 'store_owner',
         firebase_uid: cred.user.uid,
       });
-      toast.success("Store owner account created.");
-      navigate("/store-dashboard");
+      toast.success("Store owner account created successfully! Please sign in to continue.");
+      navigate("/signin?role=store");
     } catch (error: unknown) {
       console.error("Store owner sign-up error:", error);
       let errorMessage = "An unexpected error occurred during registration.";
