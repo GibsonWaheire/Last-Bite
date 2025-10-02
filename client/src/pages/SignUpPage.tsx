@@ -57,12 +57,15 @@ const SignUpPage = () => {
     setSubmitting(true);
     try {
       const cred = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      await userApi.createUser({
-        name: values.name,
-        email: values.email,
-        role: 'customer',
-        firebase_uid: cred.user.uid,
-      });
+      
+      // TODO: Re-enable backend user creation when backend is deployed
+      // await userApi.createUser({
+      //   name: values.name,
+      //   email: values.email,
+      //   role: 'customer',
+      //   firebase_uid: cred.user.uid,
+      // });
+      
       toast.success("Account created successfully! Welcome!");
       navigate("/user-dashboard");
     } catch (error: unknown) {
@@ -97,12 +100,15 @@ const SignUpPage = () => {
     setSubmitting(true);
     try {
       const cred = await createUserWithEmailAndPassword(auth, values.email, values.password);
-      await userApi.createUser({
-        name: values.name,
-        email: values.email,
-        role: 'store_owner',
-        firebase_uid: cred.user.uid,
-      });
+      
+      // TODO: Re-enable backend user creation when backend is deployed
+      // await userApi.createUser({
+      //   name: values.name,
+      //   email: values.email,
+      //   role: 'store_owner',
+      //   firebase_uid: cred.user.uid,
+      // });
+      
       toast.success("Store owner account created successfully! Welcome!");
       navigate("/store-dashboard");
     } catch (error: unknown) {
