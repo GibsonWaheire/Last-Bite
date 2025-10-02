@@ -18,6 +18,8 @@ import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import StoreOwnerSignInPage from "./pages/StoreOwnerSignInPage";
 import StoreOwnerSignUpPage from "./pages/StoreOwnerSignUpPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
+import StoreOwnerLanding from "./pages/StoreOwnerLanding";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +44,9 @@ const App = () => (
               <Route path="/signup" element={<SignUpPage />} />
               <Route path="/store-owner-signin" element={<StoreOwnerSignInPage />} />
               <Route path="/store-owner-signup" element={<StoreOwnerSignUpPage />} />
+              <Route path="/store-owner-landing" element={<StoreOwnerLanding />} />
+              <Route path="/admin-login" element={<AdminLoginPage />} />
+              <Route path="/admin-dashboard" element={<AdminDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -36,15 +36,22 @@ def create_food():
     except ValidationError as err:
         return jsonify({"message": "Validation error", "errors": err.messages}), 400
     
+    # Get user_id from request headers or body
+    user_id = request.json.get("user_id")
+    if not user_id:
+        return jsonify({"message": "User ID is required"}), 400
+    
     # Check if user exists
-    user = User.query.get(validated_data["user_id"])
+    user = User.query.get(user_id)
     if not user:
         return jsonify({"message": "User not found"}), 404
 
     # Create food listing
     food = FoodListing(
         name=validated_data["name"],
-        user_id=validated_data["user_id"],
+        description=validated_data.get("description"),
+        category=validated_data["category"],
+        user_id=user_id,
         stock=validated_data["stock"],
         price=validated_data["price"],
         expiry_date=validated_data.get("expiry_date")

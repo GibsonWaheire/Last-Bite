@@ -43,10 +43,11 @@ export const foodListingValidationSchema = Yup.object({
     .min(1, 'Food name is required')
     .max(100, 'Food name must be less than 100 characters')
     .required('Food name is required'),
-  user_id: Yup.number()
-    .integer('User ID must be an integer')
-    .positive('User ID must be positive')
-    .required('User ID is required'),
+  description: Yup.string()
+    .max(500, 'Description must be less than 500 characters')
+    .nullable(),
+  category: Yup.string()
+    .required('Category is required'),
   stock: Yup.number()
     .integer('Stock must be an integer')
     .min(0, 'Stock cannot be negative')
@@ -96,7 +97,6 @@ export const initialFoodListingValues = {
   name: '',
   description: '',
   category: '',
-  user_id: 1,
   stock: 1,
   price: 0.0,
   expiry_date: null,

@@ -93,13 +93,24 @@ const SignInPage = () => {
 
     try {
       const cred = await signInWithEmailAndPassword(auth, values.email, values.password);
-      const backendUser = await userApi.syncFirebaseUser(cred.user.uid, values.email, cred.user.displayName || values.email.split('@')[0]);
       
-      if (backendUser.role !== 'store_owner') {
-        toast.error("This email is not registered as a store owner. Please use the 'Customer' tab or a store owner email.");
-        await auth.signOut(); // Sign out if role mismatch
+      // First, check if user exists in backend and has store_owner role
+      let backendUser;
+      try {
+        backendUser = await userApi.getUserByEmail(values.email);
+        if (backendUser.role !== 'store_owner') {
+          toast.error("This email is not registered as a store owner. Please use the 'Customer' tab or sign up as store owner first.");
+          await auth.signOut();
+          return;
+        }
+      } catch (error) {
+        toast.error("User not found. Please sign up as a store owner first.");
+        await auth.signOut();
         return;
       }
+      
+      // Sync Firebase user but preserve the store_owner role
+      await userApi.syncFirebaseUser(cred.user.uid, values.email, cred.user.displayName || values.email.split('@')[0]);
 
       toast.success("Signed in successfully as store owner!");
       navigate("/store-dashboard");

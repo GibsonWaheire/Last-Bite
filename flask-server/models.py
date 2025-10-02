@@ -16,6 +16,8 @@ class User(db.Model):
 class FoodListing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(500), nullable=True)
+    category = db.Column(db.String(50), nullable=False, default='General')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     stock = db.Column(db.Integer, nullable=False, default=1)
     price = db.Column(db.Float, nullable=False, default=0.0)
