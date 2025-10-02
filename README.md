@@ -1,5 +1,11 @@
-Here is the live link:  https://lastbite-code-7e09248cd58b.herokuapp.com/      
 # 🍎 FoodRescue - Buy Discounted Food Before It Expires
+
+[![Live Application](https://img.shields.io/badge/🚀_LIVE_-Success-brightgreen)](https://lastbite-food-rescue.web.app)
+
+## 🌐 Live Application
+**🔗 [https://lastbite-food-rescue.web.app](https://lastbite-food-rescue.web.app)**
+
+*A full-stack food rescue marketplace connecting customers with discounted food from local stores.*
 
 A full-stack web application that connects customers with discounted food items from stores before they expire, reducing food waste while helping people save money on groceries.
 
@@ -47,6 +53,8 @@ Food waste is a huge problem—stores and restaurants throw away tons of food ev
 - **React Router** for navigation
 - **React Query** for state management
 - **Formik** with Yup validation
+- **Firebase Authentication** for user management
+- **Firebase Hosting** for deployment
 
 ### Backend (Server)
 - **Python** with Flask
@@ -133,6 +141,28 @@ npm run dev:server    # Backend only (Flask)
 npm run build    # Build frontend
 npm start        # Start Flask production server
 ```
+
+## 🚀 Deployment
+
+### Firebase Hosting
+The application is deployed on Firebase Hosting:
+
+```bash
+# Build the React app
+cd client
+npm run build
+
+# Deploy to Firebase
+firebase deploy --only hosting --project lastbite-food-rescue
+```
+
+**Live URL**: https://lastbite-food-rescue.web.app
+
+### Firebase Configuration
+- **Project**: `lastbite-food-rescue`
+- **Authentication**: Firebase Auth enabled
+- **Hosting**: Firebase Hosting configured
+- **Data Connect**: Configured for future database features
 
 ## 📡 API Endpoints
 
