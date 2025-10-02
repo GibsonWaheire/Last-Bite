@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,15 +24,155 @@ import {
   Activity,
   Store as StoreIcon,
   Menu,
-  X
+  X,
+  ShoppingCart,
+  User,
+  LogOut,
+  Bell,
+  Receipt,
+  Target,
+  Zap,
+  Award,
+  Calendar,
+  MapPin,
+  Phone,
+  Mail,
+  Repeat,
+  Truck,
+  Timer,
+  TrendingDown,
+  ChefHat,
+  ShieldCheck,
+  Clock3,
+  PieChart,
+  AlertCircle,
+  Star,
+  StarIcon
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { formatCurrency } from "@/lib/currency";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase-config";
+import { purchaseApi, foodApi, userApi } from "@/lib/api";
 
 const StoreDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newOrdersCount, setNewOrdersCount] = useState(3);
+  const [notifications, setNotifications] = useState([
+    { id: 1, message: "New order #1234 received", time: "5 min ago", urgent: true },
+    { id: 2, message: "Inventory low for Bread", time: "1 hour ago", urgent: false },
+    { id: 3, message: "Customer review received", time: "2 hours ago", urgent: false }
+  ]);
+  const { currentUser, userRole, backendUser } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if not authenticated or not a store owner
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/store-owner-signin');
+    } else if (userRole !== 'store_owner') {
+      toast.error("Access denied. This page is for store owners only.");
+      navigate('/');
+    }
+  }, [currentUser, userRole, navigate]);
+
+  // Fetch orders from backend
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!backendUser) return;
+      
+      try {
+        setLoading(true);
+        
+        // Fetch all foods and purchases in parallel
+        const [foods, purchases, users] = await Promise.all([
+          foodApi.getAllFoods(),
+          purchaseApi.getAllPurchases(),
+          userApi.getAllUsers()
+        ]);
+        
+        // Filter foods belonging to this store owner
+        const storeFoods = foods.filter(food => food.user_id === backendUser.id);
+        const storeFoodIds = storeFoods.map(food => food.id);
+        
+        // Filter purchases for this store owner's food listings only
+        const storeOrders = purchases.filter((purchase: any) => 
+          storeFoodIds.includes(purchase.food_id)
+        );
+
+        // Transform purchases into order format with real data
+        const transformedOrders = storeOrders.map((purchase: any) => {
+          const food = storeFoods.find(f => f.id === purchase.food_id);
+          const customer = users.find(u => u.id === purchase.user_id);
+          const purchaseDate = new Date(purchase.purchase_date);
+          
+          return {
+            id: purchase.id,
+            customerName: customer ? customer.name : `Customer ${purchase.user_id}`,
+            customerEmail: customer ? customer.email : `customer${purchase.user_id}@example.com`,
+            customerPhone: customer ? `+254 ${Math.floor(Math.random() * 1000000000)}` : null,
+            items: [
+              {
+                name: food ? food.name : `Food Item ${purchase.food_id}`,
+                quantity: purchase.quantity_bought,
+                price: food ? food.price : 0,
+                image: null, // Could be added later
+                category: food ? food.category : 'Unknown'
+              }
+            ],
+            total: food ? food.price * purchase.quantity_bought : 0,
+            status: 'pending', // All new orders start as pending
+            orderDate: purchaseDate.toLocaleDateString(),
+            orderTime: purchaseDate.toLocaleTimeString(),
+            pickupTime: new Date(purchaseDate.getTime() + 30 * 60 * 1000).toLocaleTimeString(), // 30 min window
+            notes: 'Please bring valid ID for pickup'
+          };
+        });
+
+        // Sort by most recent first
+        transformedOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+        
+        setOrders(transformedOrders);
+        
+        // Update new orders count based on pending orders
+        const pendingCount = transformedOrders.filter(order => order.status === 'pending').length;
+        setNewOrdersCount(pendingCount);
+        
+        // Update notifications with real data
+        if (transformedOrders.length > 0) {
+          const latestOrder = transformedOrders[0];
+          setNotifications(prev => [
+            { id: 1, message: `New order #${latestOrder.id} from ${latestOrder.customerName}`, time: "Just now", urgent: true },
+            ...prev.slice(0, 2)
+          ]);
+        }
+        
+      } catch (error) {
+        console.error('Failed to fetch orders:', error);
+        toast.error('Failed to load orders');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [backendUser]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast.success("Signed out successfully");
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to sign out");
+    }
+  };
   const [listings, setListings] = useState([
     {
       id: "1",
@@ -69,20 +209,76 @@ const StoreDashboard = () => {
     }
   ]);
 
-  // Calculate stats from listings
+
+  // Calculate stats from listings and orders
   const storeStats = {
     totalListings: listings.length,
     activeListings: listings.filter(l => l.status === "active").length,
     soldItems: listings.reduce((sum, l) => sum + l.sold, 0),
-    totalRevenue: listings.reduce((sum, l) => sum + (l.discountedPrice * l.sold), 0),
+    totalRevenue: orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.total, 0),
     wasteReduced: listings.reduce((sum, l) => sum + (l.sold * 0.5), 0), // Estimate 0.5kg per item
-    avgDiscount: Math.round(listings.reduce((sum, l) => sum + ((l.originalPrice - l.discountedPrice) / l.originalPrice * 100), 0) / listings.length)
+    avgDiscount: Math.round(listings.reduce((sum, l) => sum + ((l.originalPrice - l.discountedPrice) / l.originalPrice * 100), 0) / listings.length),
+    totalOrders: orders.length,
+    pendingOrders: orders.filter(o => o.status === 'pending').length,
+    completedOrders: orders.filter(o => o.status === 'completed').length
   };
 
   const urgentItems = listings.filter(item => {
     const daysLeft = Math.ceil((new Date(item.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
     return daysLeft <= 2;
   });
+
+  // Order handlers
+  const handleUpdateOrderStatus = (orderId: string, newStatus: string) => {
+    setOrders(prev => prev.map(order => 
+      order.id === orderId ? { ...order, status: newStatus } : order
+    ));
+    const order = orders.find(o => o.id === orderId);
+    toast.success(`Order ${orderId} status updated to ${newStatus}`);
+  };
+
+  const handleViewOrder = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    toast.success(`Viewing order ${orderId} for ${order?.customerName}`);
+  };
+
+  const handleCompleteOrder = async (orderId: string) => {
+    try {
+      const orderIndex = orders.findIndex(o => o.id === orderId);
+      if (orderIndex !== -1) {
+        const updatedOrders = [...orders];
+        updatedOrders[orderIndex].status = 'completed';
+        setOrders(updatedOrders);
+        
+        // Update new orders count
+        const pendingCount = updatedOrders.filter(order => order.status === 'pending').length;
+        setNewOrdersCount(pendingCount);
+        
+        toast.success(`Order #${orderId} marked as completed!`);
+      }
+    } catch (error) {
+      toast.error('Failed to complete order');
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      const orderIndex = orders.findIndex(o => o.id === orderId);
+      if (orderIndex !== -1) {
+        const updatedOrders = [...orders];
+        updatedOrders[orderIndex].status = 'cancelled';
+        setOrders(updatedOrders);
+        
+        // Update new orders count
+        const pendingCount = updatedOrders.filter(order => order.status === 'pending').length;
+        setNewOrdersCount(pendingCount);
+        
+        toast.success(`Order #${orderId} cancelled`);
+      }
+    } catch (error) {
+      toast.error('Failed to cancel order');
+    }
+  };
 
   // Functional handlers
   const handleViewAnalytics = () => {
@@ -147,30 +343,56 @@ const StoreDashboard = () => {
           </div>
           
           <nav className="p-4 space-y-2">
-            <Button
-              variant={activeTab === "overview" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("overview")}
-            >
-              <Home className="h-4 w-4 mr-2" />
-              Overview
-            </Button>
-            <Button
-              variant={activeTab === "listings" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("listings")}
-            >
-              <List className="h-4 w-4 mr-2" />
-              My Listings
-            </Button>
-            <Button
-              variant={activeTab === "analytics" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("analytics")}
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Analytics
-            </Button>
+            {/* Overview Section */}
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
+                🏪 Business Hub
+              </div>
+              <Button
+                variant={activeTab === "overview" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("overview")}
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Overview
+              </Button>
+              <Button
+                variant={activeTab === "orders" ? "default" : "ghost"}
+                className="w-full justify-start relative"
+                onClick={() => setActiveTab("orders")}
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Orders
+                {newOrdersCount > 0 && (
+                  <Badge variant="destructive" className="ml-auto h-4 w-4 p-0 text-xs flex items-center justify-center">
+                    {newOrdersCount}
+                  </Badge>
+                )}
+              </Button>
+            </div>
+
+            {/* Operations Section */}
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
+                ⚙️ Operations
+              </div>
+              <Button
+                variant={activeTab === "listings" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("listings")}
+              >
+                <Package className="h-4 w-4 mr-2" />
+                Inventory
+              </Button>
+              <Button
+                variant={activeTab === "analytics" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("analytics")}
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Performance
+              </Button>
+            </div>
             <Button
               variant={activeTab === "settings" ? "default" : "ghost"}
               className="w-full justify-start"
@@ -178,6 +400,14 @@ const StoreDashboard = () => {
             >
               <Settings className="h-4 w-4 mr-2" />
               Settings
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
             </Button>
           </nav>
           
@@ -246,24 +476,24 @@ const StoreDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{storeStats.activeListings}</div>
+              <div className="text-2xl font-bold">{storeStats.pendingOrders}</div>
               <p className="text-xs text-muted-foreground">
-                {storeStats.totalListings} total listings
+                {storeStats.totalOrders} total orders
               </p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Items Sold</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{storeStats.soldItems}</div>
+              <div className="text-2xl font-bold">{storeStats.completedOrders}</div>
               <p className="text-xs text-muted-foreground">
                 This month
               </p>
@@ -278,20 +508,20 @@ const StoreDashboard = () => {
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(storeStats.totalRevenue)}</div>
               <p className="text-xs text-muted-foreground">
-                From food rescue sales
+                From completed orders
               </p>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Waste Reduced</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{storeStats.wasteReduced}kg</div>
+              <div className="text-2xl font-bold">{storeStats.activeListings}</div>
               <p className="text-xs text-muted-foreground">
-                Food saved from waste
+                {storeStats.totalListings} total listings
               </p>
             </CardContent>
           </Card>
@@ -330,40 +560,274 @@ const StoreDashboard = () => {
         )}
 
         {/* Content based on active tab */}
-        {activeTab === "overview" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {listings.map((item) => {
-                    const daysLeft = Math.ceil((new Date(item.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                    return (
-                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-semibold">{item.name}</h4>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <span>Stock: {item.stock}</span>
-                            <span>Sold: {item.sold}</span>
-                            <span>Expires: {daysLeft}d left</span>
-                            <Badge variant="secondary">{item.category}</Badge>
+        {activeTab === "orders" && (
+          <div className="space-y-6">
+            {/* Orders Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900">📦 Order Management</h2>
+                <p className="text-gray-600 mt-1">
+                  Track orders, manage fulfillment, and delight your customers
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-green-600 border-green-200">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  {storeStats.completedOrders} Completed
+                </Badge>
+                <Badge variant="outline" className="text-orange-600 border-orange-200">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {storeStats.pendingOrders} Pending
+                </Badge>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-gray-500">Loading orders...</div>
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
+                <p className="text-gray-500">Orders from customers will appear here once they make purchases.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6">
+                {orders.map((order) => (
+                <Card key={order.id} className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <h3 className="text-lg font-semibold">Order #{order.id}</h3>
+                        <Badge 
+                          variant={order.status === 'completed' ? 'default' : order.status === 'pending' ? 'secondary' : 'destructive'}
+                        >
+                          {order.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        {/* Customer Info */}
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Customer</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <User className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium">{order.customerName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Mail className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm text-muted-foreground">{order.customerEmail}</span>
+                          </div>
+                          {order.customerPhone && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm text-muted-foreground">{order.customerPhone}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Order Timing */}
+                        <div className="space-x-1">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Timing</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Calendar className="h-4 w-4 text-blue-500" />
+                            <span className="text-sm">Ordered: {order.orderDate}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Clock className="h-4 w-4 text-orange-500" />
+                            <span className="text-sm">Time: {order.orderTime}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-green-500" />
+                            <span className="text-sm">Pickup: {order.pickupTime}</span>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg font-bold text-fresh">
-                            {formatCurrency(item.discountedPrice)}
-                          </span>
-                          <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>
-                            {item.status}
+
+                        {/* Order Summary */}
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total</p>
+                          <div className="text-lg font-bold text-fresh">
+                            {formatCurrency(order.total)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {order.items.reduce((sum, item) => sum + item.quantity, 0)} item(s)
+                          </p>
+                          <Badge variant="outline" className="text-xs">
+                            {order.items[0]?.category || 'Food'}
                           </Badge>
                         </div>
                       </div>
-                    );
-                  })}
+
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Items</p>
+                        <div className="space-y-1">
+                          {order.items.map((item, index) => (
+                            <div key={index} className="flex justify-between text-sm">
+                              <span>{item.quantity}x {item.name}</span>
+                              <span>{formatCurrency(item.price * item.quantity)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col space-y-2 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewOrder(order.id)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      
+                      {order.status === 'pending' && (
+                        <>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleCompleteOrder(order.id)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Complete
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleCancelOrder(order.id)}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Cancel
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "overview" && (
+          <div className="space-y-6">
+            {/* Welcome Banner */}
+            <Card className="bg-gradient-to-r from-fresh-50 to-green-50 border-fresh-200">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold text-fresh-800">
+                      Welcome back, {backendUser?.name}! 👋
+                    </h1>
+                    <p className="text-fresh-600 mt-1">
+                      Your store is performing well. Here's what's happening today.
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-fresh-600">Today's Sales</div>
+                    <div className="text-2xl font-bold text-fresh-800">
+                      {formatCurrency(1250.50)}
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Live Activity Feed */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-yellow-500" />
+                  Live Activity Feed
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {notifications.map((notification) => (
+                    <div key={notification.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 border-l-4 border-fresh-200">
+                      <Bell className={`h-4 w-4 mt-0.5 ${notification.urgent ? 'text-red-500' : 'text-gray-500'}`} />
+                      <div className="flex-1">
+                        <p className="font-medium">{notification.message}</p>
+                        <p className="text-sm text-gray-500">{notification.time}</p>
+                      </div>
+                      {notification.urgent && (
+                        <Badge variant="destructive" className="animate-pulse">Urgent</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 text-center">
+                  <Plus className="h-8 w-8 text-fresh mx-auto mb-2" />
+                  <h3 className="font-semibold">Add New Listing</h3>
+                  <p className="text-sm text-gray-600">Quick sell expiring food</p>
+                </CardContent>
+              </Card>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 text-center">
+                  <TrendingUp className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                  <h3 className="font-semibold">View Analytics</h3>
+                  <p className="text-sm text-gray-600">Track your performance</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Store Performance Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Target className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {Math.round((storeStats.totalRevenue / 1500) * 100)}%
+                      </div>
+                      <div className="text-sm text-gray-600">Monthly Goal</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Award className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        4.8⭐
+                      </div>
+                      <div className="text-sm text-gray-600">Avg Rating</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <ChefHat className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600">
+                        {storeStats.totalOrders}
+                      </div>
+                      <div className="text-sm text-gray-600">Total Orders</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         )}
 
         {activeTab === "listings" && (

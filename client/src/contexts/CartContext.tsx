@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import { toast } from 'sonner';
+import { purchaseApi } from '../lib/api';
+import { useAuth } from './AuthContext';
 
 export interface CartItem {
   id: string;
@@ -18,6 +20,7 @@ interface CartState {
   items: CartItem[];
   totalItems: number;
   totalPrice: number;
+  totalSavings: number;
 }
 
 type CartAction =
@@ -46,23 +49,27 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         );
         
         const totalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-        const totalPrice = updatedItems.reduce((sum, item) => sum + (item.discountedPrice * item.quantity), 0);
+        const totalPrice = updatedItems.reduce((sum, item) => sum + ((item.discountedPrice || 0) * item.quantity), 0);
+        const totalSavings = updatedItems.reduce((sum, item) => sum + (((item.originalPrice || 0) - (item.discountedPrice || 0)) * item.quantity), 0);
         
         return {
           items: updatedItems,
           totalItems,
-          totalPrice
+          totalPrice,
+          totalSavings
         };
       } else {
         // Add new item
         const newItems = [...state.items, action.payload];
         const totalItems = newItems.reduce((sum, item) => sum + item.quantity, 0);
-        const totalPrice = newItems.reduce((sum, item) => sum + (item.discountedPrice * item.quantity), 0);
+        const totalPrice = newItems.reduce((sum, item) => sum + ((item.discountedPrice || 0) * item.quantity), 0);
+        const totalSavings = newItems.reduce((sum, item) => sum + (((item.originalPrice || 0) - (item.discountedPrice || 0)) * item.quantity), 0);
         
         return {
           items: newItems,
           totalItems,
-          totalPrice
+          totalPrice,
+          totalSavings
         };
       }
     }
@@ -70,12 +77,14 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     case 'REMOVE_FROM_CART': {
       const updatedItems = state.items.filter(item => item.id !== action.payload);
       const totalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-      const totalPrice = updatedItems.reduce((sum, item) => sum + (item.discountedPrice * item.quantity), 0);
+      const totalPrice = updatedItems.reduce((sum, item) => sum + ((item.discountedPrice || 0) * item.quantity), 0);
+      const totalSavings = updatedItems.reduce((sum, item) => sum + (((item.originalPrice || 0) - (item.discountedPrice || 0)) * item.quantity), 0);
       
       return {
         items: updatedItems,
         totalItems,
-        totalPrice
+        totalPrice,
+        totalSavings
       };
     }
     
@@ -87,12 +96,14 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       ).filter(item => item.quantity > 0);
       
       const totalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-      const totalPrice = updatedItems.reduce((sum, item) => sum + (item.discountedPrice * item.quantity), 0);
+      const totalPrice = updatedItems.reduce((sum, item) => sum + ((item.discountedPrice || 0) * item.quantity), 0);
+      const totalSavings = updatedItems.reduce((sum, item) => sum + (((item.originalPrice || 0) - (item.discountedPrice || 0)) * item.quantity), 0);
       
       return {
         items: updatedItems,
         totalItems,
-        totalPrice
+        totalPrice,
+        totalSavings
       };
     }
     
@@ -100,17 +111,20 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return {
         items: [],
         totalItems: 0,
-        totalPrice: 0
+        totalPrice: 0,
+        totalSavings: 0
       };
     
     case 'LOAD_CART': {
       const totalItems = action.payload.reduce((sum, item) => sum + item.quantity, 0);
-      const totalPrice = action.payload.reduce((sum, item) => sum + (item.discountedPrice * item.quantity), 0);
+      const totalPrice = action.payload.reduce((sum, item) => sum + ((item.discountedPrice || 0) * item.quantity), 0);
+      const totalSavings = action.payload.reduce((sum, item) => sum + (((item.originalPrice || 0) - (item.discountedPrice || 0)) * item.quantity), 0);
       
       return {
         items: action.payload,
         totalItems,
-        totalPrice
+        totalPrice,
+        totalSavings
       };
     }
     
@@ -122,7 +136,8 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 const initialState: CartState = {
   items: [],
   totalItems: 0,
-  totalPrice: 0
+  totalPrice: 0,
+  totalSavings: 0
 };
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -185,10 +200,45 @@ export const useCartActions = () => {
     toast.success('Cart cleared');
   };
 
+  const checkout = async () => {
+    const { state } = useCart();
+    const { backendUser } = useAuth();
+    
+    if (!backendUser) {
+      toast.error('Please sign in to complete your purchase');
+      return;
+    }
+
+    if (state.items.length === 0) {
+      toast.error('Your cart is empty');
+      return;
+    }
+
+    try {
+      // Create purchase records for each item in cart
+      for (const item of state.items) {
+        await purchaseApi.createPurchase({
+          user_id: backendUser.id,
+          food_id: parseInt(item.id),
+          quantity_bought: item.quantity,
+          purchase_date: new Date().toISOString()
+        });
+      }
+
+      // Clear cart after successful purchase
+      dispatch({ type: 'CLEAR_CART' });
+      toast.success('Purchase completed successfully!');
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast.error('Failed to complete purchase. Please try again.');
+    }
+  };
+
   return {
     addToCart,
     removeFromCart,
     updateQuantity,
-    clearCart
+    clearCart,
+    checkout
   };
 };

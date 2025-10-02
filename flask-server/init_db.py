@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+from app import app
+from extensions import db
+
+with app.app_context():
+    db.create_all()
+    print("Database tables created successfully!")

@@ -1,5 +1,11 @@
-Here is the live link:  https://lastbite-code-7e09248cd58b.herokuapp.com/      
 # 🍎 FoodRescue - Buy Discounted Food Before It Expires
+
+[![Live Application](https://img.shields.io/badge/🚀_LIVE_-Success-brightgreen)](https://lastbite-food-rescue.web.app)
+
+## 🌐 Live Application
+**🔗 [https://lastbite-food-rescue.web.app](https://lastbite-food-rescue.web.app)**
+
+*A full-stack food rescue marketplace connecting customers with discounted food from local stores.*
 
 A full-stack web application that connects customers with discounted food items from stores before they expire, reducing food waste while helping people save money on groceries.
 
@@ -46,15 +52,17 @@ Food waste is a huge problem—stores and restaurants throw away tons of food ev
 - **Radix UI** components for accessibility
 - **React Router** for navigation
 - **React Query** for state management
-- **React Hook Form** with Zod validation
+- **Formik** with Yup validation
+- **Firebase Authentication** for user management
+- **Firebase Hosting** for deployment
 
 ### Backend (Server)
-- **Node.js** with Express.js
-- **CORS** for cross-origin requests
-- **Helmet** for security headers
-- **Morgan** for request logging
-- **JWT** for authentication (planned)
-- **Database** (TBD - PostgreSQL/MongoDB)
+- **Python** with Flask
+- **Flask-SQLAlchemy** for database ORM
+- **Flask-Marshmallow** for JSON serialization
+- **Flask-CORS** for cross-origin requests
+- **SQLite** database (can be upgraded to PostgreSQL)
+- **Marshmallow** for data validation
 
 ## 📁 Project Structure
 
@@ -69,14 +77,13 @@ foodrescue/
 │   │   └── assets/        # Images and static files
 │   ├── public/            # Static assets
 │   └── package.json       # Frontend dependencies
-├── server/                # Backend Express API
-│   ├── src/
-│   │   ├── routes/        # API route definitions
-│   │   ├── controllers/   # Route controllers
-│   │   ├── models/       # Data models
-│   │   ├── middleware/   # Custom middleware
-│   │   └── utils/        # Utility functions
-│   └── package.json       # Backend dependencies
+├── flask-server/          # Backend Flask API
+│   ├── routes/            # API route definitions
+│   ├── models.py          # SQLAlchemy data models
+│   ├── schemas.py         # Marshmallow serialization schemas
+│   ├── extensions.py      # Flask extensions
+│   ├── app.py            # Flask application
+│   └── requirements.txt   # Python dependencies
 └── package.json           # Root workspace configuration
 ```
 
@@ -84,7 +91,9 @@ foodrescue/
 
 ### Prerequisites
 - Node.js (v18 or higher)
+- Python (v3.8 or higher)
 - npm or yarn
+- pip
 - Git
 
 ### Installation
@@ -100,11 +109,12 @@ cd Last-Bite
 npm run install:all
 ```
 
-3. **Set up environment variables:**
+3. **Set up Python virtual environment:**
 ```bash
-cd server
-cp env.example .env
-# Edit .env with your configuration
+cd flask-server
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
 ### Development
@@ -116,12 +126,12 @@ npm run dev
 
 This starts:
 - **Frontend**: http://localhost:5173 (Vite dev server)
-- **Backend**: http://localhost:3001 (Express API)
+- **Backend**: http://localhost:5000 (Flask API)
 
 **Run individual services:**
 ```bash
 npm run dev:client    # Frontend only
-npm run dev:server    # Backend only
+npm run dev:server    # Backend only (Flask)
 ```
 
 ### Production
@@ -129,13 +139,39 @@ npm run dev:server    # Backend only
 **Build and start:**
 ```bash
 npm run build    # Build frontend
-npm start        # Start production server
+npm start        # Start Flask production server
 ```
+
+## 🚀 Deployment
+
+### Firebase Hosting
+The application is deployed on Firebase Hosting:
+
+```bash
+# Build the React app
+cd client
+npm run build
+
+# Deploy to Firebase
+firebase deploy --only hosting --project lastbite-food-rescue
+```
+
+**Live URL**: https://lastbite-food-rescue.web.app
+
+### Firebase Configuration
+- **Project**: `lastbite-food-rescue`
+- **Authentication**: Firebase Auth enabled
+- **Hosting**: Firebase Hosting configured
+- **Data Connect**: Configured for future database features
 
 ## 📡 API Endpoints
 
-### Health Check
-- `GET /api/health` - Server health status
+### Users
+- `GET /api/users` - Get all users
+- `GET /api/users/:id` - Get specific user
+- `POST /api/users` - Create new user
+- `PUT /api/users/:id` - Update user
+- `DELETE /api/users/:id` - Delete user
 
 ### Food Listings
 - `GET /api/foods` - Get all food listings
@@ -144,12 +180,12 @@ npm start        # Start production server
 - `PUT /api/foods/:id` - Update food listing
 - `DELETE /api/foods/:id` - Delete food listing
 
-### Stores
-- `GET /api/stores` - Get all stores
-- `GET /api/stores/:id` - Get specific store
-- `POST /api/stores` - Create new store
-- `PUT /api/stores/:id` - Update store
-- `DELETE /api/stores/:id` - Delete store
+### Purchases
+- `GET /api/purchases` - Get all purchases
+- `GET /api/purchases/:id` - Get specific purchase
+- `POST /api/purchases` - Create new purchase
+- `PUT /api/purchases/:id` - Update purchase
+- `DELETE /api/purchases/:id` - Delete purchase
 
 ## 👥 Team Members
 
@@ -165,9 +201,10 @@ This project is developed by a team of 4 developers:
 ✅ **3 Models**: User, FoodListing, Purchase  
 ✅ **One-to-Many Relationship**: User → FoodListing  
 ✅ **Many-to-Many Relationship**: User ↔ FoodListing (through Purchase)  
-✅ **Extra Attribute**: `quantity_bought` in Purchase model  
+✅ **Extra Attribute**: `quantity_bought` and `purchase_date` in Purchase model  
 ✅ **CRUD Operations**: Full Create, Read, Update, Delete functionality  
-✅ **Validations**: Data validation on both frontend and backend  
+✅ **Flask Backend**: Python Flask with SQLAlchemy and Marshmallow  
+✅ **Formik Validation**: Frontend forms with Yup validation  
 ✅ **Multiple Routes**: React Router with multiple page routes  
 ✅ **Full-Stack**: Complete frontend and backend implementation  
 

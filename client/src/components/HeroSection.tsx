@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import heroFood from "@/assets/hero-food.jpg";
 
 const HeroSection = () => {
+
   return (
     <section className="relative min-h-[600px] flex items-center overflow-hidden">
       {/* Background Image */}
@@ -41,8 +42,13 @@ const HeroSection = () => {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-fresh text-fresh hover:bg-fresh hover:text-white" asChild>
-              <Link to="/store-dashboard">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-fresh text-fresh hover:bg-fresh hover:text-white"
+              asChild
+            >
+              <Link to="/store-owner-landing">
                 For Store Owners
               </Link>
             </Button>
