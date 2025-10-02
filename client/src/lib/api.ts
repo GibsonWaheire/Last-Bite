@@ -1,6 +1,6 @@
 // API service for communicating with Flask backend
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://lastbite-food-rescue-api-bff3e46dc18a.herokuapp.com/api';
 
 export interface User {
   id: number;

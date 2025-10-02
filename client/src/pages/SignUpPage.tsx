@@ -12,6 +12,7 @@ import { auth } from "../firebase-config";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { signUpValidationSchema, initialSignUpValues } from "@/lib/validations";
 import { userApi } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SignUpPage = () => {
   const [showPasswordCustomer, setShowPasswordCustomer] = useState(false);
@@ -66,6 +67,9 @@ const SignUpPage = () => {
       //   firebase_uid: cred.user.uid,
       // });
       
+      // Set role in AuthContext for dashboard navigation
+      setUserRole('customer');
+      
       toast.success("Account created successfully! Welcome!");
       navigate("/user-dashboard");
     } catch (error: unknown) {
@@ -108,6 +112,9 @@ const SignUpPage = () => {
       //   role: 'store_owner',
       //   firebase_uid: cred.user.uid,
       // });
+      
+      // Set role in AuthContext for dashboard dashboard navigation
+      setUserRole('store_owner');
       
       toast.success("Store owner account created successfully! Welcome!");
       navigate("/store-dashboard");
