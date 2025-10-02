@@ -18,19 +18,11 @@ const StoreOwnerSignUpPage = () => {
   const navigate = useNavigate();
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Redirect authenticated users away from the sign-up page
+  // Redirect authenticated users away from the sign-up page (simple redirect)
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Check if user is a store owner
-        const email = user.email || '';
-        if (email.includes('@store.')) {
-          navigate("/store-dashboard");
-        } else {
-          // User is not a store owner, show error and sign out
-          toast.error("This email is not registered as a store owner");
-          auth.signOut();
-        }
+        navigate("/store-dashboard");
       }
     });
     return () => unsubscribe();
@@ -56,12 +48,6 @@ const StoreOwnerSignUpPage = () => {
     setSubmitting(true);
 
     try {
-      // Check if email is for store owners
-      if (!values.email.includes('@store.')) {
-        toast.error("Please use a store owner email address (must contain @store.)");
-        return;
-      }
-
       await createUserWithEmailAndPassword(auth, values.email, values.password);
       toast.success("Store owner account created successfully! Welcome to Last Bite Rescue!");
       // The onAuthStateChanged listener will handle the redirection
@@ -149,9 +135,7 @@ const StoreOwnerSignUpPage = () => {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
                   <ErrorMessage name="email" component="div" className="text-sm text-red-500" />
-                  <p className="text-xs text-muted-foreground">
-                    Use a store owner email (must contain @store.)
-                  </p>
+                {/* No domain restriction */}
                 </div>
 
                 <div className="grid gap-2">
