@@ -7,26 +7,25 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "cd client && npm run dev",
-    "dev:server": "cd server && npm run dev",
+    "dev:server": "cd flask-server && python app.py",
     "build": "npm run build:client",
     "build:client": "cd client && npm run build",
-    "start": "cd server && npm start",
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "start": "cd flask-server && python app.py",
+    "install:all": "npm install && cd client && npm install && cd ../flask-server && pip install -r requirements.txt",
     "lint": "cd client && npm run lint",
-    "test": "cd server && npm test"
+    "test": "cd flask-server && python -m pytest"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
   "workspaces": [
-    "client",
-    "server"
+    "client"
   ],
   "keywords": [
     "food-rescue",
     "sustainability",
     "react",
-    "express",
+    "flask",
     "typescript"
   ],
   "author": "Last Bite Rescue",
