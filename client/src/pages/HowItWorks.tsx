@@ -17,9 +17,24 @@ import {
   TrendingUp,
   Shield
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const HowItWorks = () => {
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+
+  const handleStoreOwnerClick = () => {
+    if (currentUser) {
+      // User is authenticated, redirect to store dashboard
+      navigate('/store-dashboard');
+    } else {
+      // User is not authenticated, redirect to sign in
+      toast.info("Please sign in to access the store dashboard");
+      navigate('/signin');
+    }
+  };
   const steps = [
     {
       icon: Search,
@@ -171,10 +186,13 @@ const HowItWorks = () => {
           </div>
 
           <div className="text-center">
-            <Button asChild size="lg" variant="outline" className="border-fresh text-fresh hover:bg-fresh hover:text-white">
-              <Link to="/store-dashboard">
-                Get Started as Store Owner
-              </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-fresh text-fresh hover:bg-fresh hover:text-white"
+              onClick={handleStoreOwnerClick}
+            >
+              Get Started as Store Owner
             </Button>
           </div>
         </section>
@@ -248,10 +266,13 @@ const HowItWorks = () => {
                     Start Shopping
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-primary" asChild>
-                  <Link to="/store-dashboard">
-                    Become a Partner Store
-                  </Link>
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-white text-white hover:bg-white hover:text-primary"
+                  onClick={handleStoreOwnerClick}
+                >
+                  Become a Partner Store
                 </Button>
               </div>
             </CardContent>
