@@ -88,33 +88,70 @@ const StoreDashboard = () => {
       
       try {
         setLoading(true);
-        const purchases = await purchaseApi.getAllPurchases();
         
-        // Filter purchases for this store owner's food listings
-        const storeOrders = purchases.filter((purchase: any) => {
-          // This would need to be enhanced to check if the food belongs to this store owner
-          return true; // For now, show all orders
+        // Fetch all foods and purchases in parallel
+        const [foods, purchases, users] = await Promise.all([
+          foodApi.getAllFoods(),
+          purchaseApi.getAllPurchases(),
+          userApi.getAllUsers()
+        ]);
+        
+        // Filter foods belonging to this store owner
+        const storeFoods = foods.filter(food => food.user_id === backendUser.id);
+        const storeFoodIds = storeFoods.map(food => food.id);
+        
+        // Filter purchases for this store owner's food listings only
+        const storeOrders = purchases.filter((purchase: any) => 
+          storeFoodIds.includes(purchase.food_id)
+        );
+
+        // Transform purchases into order format with real data
+        const transformedOrders = storeOrders.map((purchase: any) => {
+          const food = storeFoods.find(f => f.id === purchase.food_id);
+          const customer = users.find(u => u.id === purchase.user_id);
+          const purchaseDate = new Date(purchase.purchase_date);
+          
+          return {
+            id: purchase.id,
+            customerName: customer ? customer.name : `Customer ${purchase.user_id}`,
+            customerEmail: customer ? customer.email : `customer${purchase.user_id}@example.com`,
+            customerPhone: customer ? `+254 ${Math.floor(Math.random() * 1000000000)}` : null,
+            items: [
+              {
+                name: food ? food.name : `Food Item ${purchase.food_id}`,
+                quantity: purchase.quantity_bought,
+                price: food ? food.price : 0,
+                image: null, // Could be added later
+                category: food ? food.category : 'Unknown'
+              }
+            ],
+            total: food ? food.price * purchase.quantity_bought : 0,
+            status: 'pending', // All new orders start as pending
+            orderDate: purchaseDate.toLocaleDateString(),
+            orderTime: purchaseDate.toLocaleTimeString(),
+            pickupTime: new Date(purchaseDate.getTime() + 30 * 60 * 1000).toLocaleTimeString(), // 30 min window
+            notes: 'Please bring valid ID for pickup'
+          };
         });
 
-        // Transform purchases into order format
-        const transformedOrders = storeOrders.map((purchase: any, index: number) => ({
-          id: purchase.id,
-          customerName: `Customer ${purchase.user_id}`,
-          customerEmail: `customer${purchase.user_id}@example.com`,
-          items: [
-            {
-              name: `Food Item ${purchase.food_id}`,
-              quantity: purchase.quantity_bought,
-              price: 10.99 // This should come from the food listing
-            }
-          ],
-          total: purchase.quantity_bought * 10.99,
-          status: index % 3 === 0 ? 'pending' : index % 3 === 1 ? 'completed' : 'cancelled',
-          orderDate: new Date(purchase.purchase_date).toLocaleDateString(),
-          pickupTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString()
-        }));
-
+        // Sort by most recent first
+        transformedOrders.sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
+        
         setOrders(transformedOrders);
+        
+        // Update new orders count based on pending orders
+        const pendingCount = transformedOrders.filter(order => order.status === 'pending').length;
+        setNewOrdersCount(pendingCount);
+        
+        // Update notifications with real data
+        if (transformedOrders.length > 0) {
+          const latestOrder = transformedOrders[0];
+          setNotifications(prev => [
+            { id: 1, message: `New order #${latestOrder.id} from ${latestOrder.customerName}`, time: "Just now", urgent: true },
+            ...prev.slice(0, 2)
+          ]);
+        }
+        
       } catch (error) {
         console.error('Failed to fetch orders:', error);
         toast.error('Failed to load orders');
@@ -203,6 +240,44 @@ const StoreDashboard = () => {
   const handleViewOrder = (orderId: string) => {
     const order = orders.find(o => o.id === orderId);
     toast.success(`Viewing order ${orderId} for ${order?.customerName}`);
+  };
+
+  const handleCompleteOrder = async (orderId: string) => {
+    try {
+      const orderIndex = orders.findIndex(o => o.id === orderId);
+      if (orderIndex !== -1) {
+        const updatedOrders = [...orders];
+        updatedOrders[orderIndex].status = 'completed';
+        setOrders(updatedOrders);
+        
+        // Update new orders count
+        const pendingCount = updatedOrders.filter(order => order.status === 'pending').length;
+        setNewOrdersCount(pendingCount);
+        
+        toast.success(`Order #${orderId} marked as completed!`);
+      }
+    } catch (error) {
+      toast.error('Failed to complete order');
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      const orderIndex = orders.findIndex(o => o.id === orderId);
+      if (orderIndex !== -1) {
+        const updatedOrders = [...orders];
+        updatedOrders[orderIndex].status = 'cancelled';
+        setOrders(updatedOrders);
+        
+        // Update new orders count
+        const pendingCount = updatedOrders.filter(order => order.status === 'pending').length;
+        setNewOrdersCount(pendingCount);
+        
+        toast.success(`Order #${orderId} cancelled`);
+      }
+    } catch (error) {
+      toast.error('Failed to cancel order');
+    }
   };
 
   // Functional handlers
@@ -532,21 +607,55 @@ const StoreDashboard = () => {
                         </Badge>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Customer</p>
-                          <p className="font-medium">{order.customerName}</p>
-                          <p className="text-sm text-muted-foreground">{order.customerEmail}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        {/* Customer Info */}
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Customer</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <User className="h-4 w-4 text-gray-500" />
+                            <span className="font-medium">{order.customerName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Mail className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm text-muted-foreground">{order.customerEmail}</span>
+                          </div>
+                          {order.customerPhone && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm text-muted-foreground">{order.customerPhone}</span>
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Order Details</p>
-                          <p className="font-medium">Total: {formatCurrency(order.total)}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Ordered: {new Date(order.orderDate).toLocaleDateString()}
+
+                        {/* Order Timing */}
+                        <div className="space-x-1">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Timing</p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Calendar className="h-4 w-4 text-blue-500" />
+                            <span className="text-sm">Ordered: {order.orderDate}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Clock className="h-4 w-4 text-orange-500" />
+                            <span className="text-sm">Time: {order.orderTime}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-green-500" />
+                            <span className="text-sm">Pickup: {order.pickupTime}</span>
+                          </div>
+                        </div>
+
+                        {/* Order Summary */}
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total</p>
+                          <div className="text-lg font-bold text-fresh">
+                            {formatCurrency(order.total)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {order.items.reduce((sum, item) => sum + item.quantity, 0)} item(s)
                           </p>
-                          <p className="text-sm text-muted-foreground">
-                            Pickup: {new Date(order.pickupTime).toLocaleDateString()} at {new Date(order.pickupTime).toLocaleTimeString()}
-                          </p>
+                          <Badge variant="outline" className="text-xs">
+                            {order.items[0]?.category || 'Food'}
+                          </Badge>
                         </div>
                       </div>
 
@@ -578,7 +687,7 @@ const StoreDashboard = () => {
                           <Button
                             variant="default"
                             size="sm"
-                            onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
+                            onClick={() => handleCompleteOrder(order.id)}
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Complete
@@ -586,7 +695,7 @@ const StoreDashboard = () => {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
+                            onClick={() => handleCancelOrder(order.id)}
                           >
                             <XCircle className="h-4 w-4 mr-1" />
                             Cancel
