@@ -27,7 +27,27 @@ import {
   X,
   ShoppingCart,
   User,
-  LogOut
+  LogOut,
+  Bell,
+  Receipt,
+  Target,
+  Zap,
+  Award,
+  Calendar,
+  MapPin,
+  Phone,
+  Mail,
+  Repeat,
+  Truck,
+  Timer,
+  TrendingDown,
+  ChefHat,
+  ShieldCheck,
+  Clock3,
+  PieChart,
+  AlertCircle,
+  Star,
+  StarIcon
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { formatCurrency } from "@/lib/currency";
@@ -38,10 +58,16 @@ import { auth } from "@/firebase-config";
 import { purchaseApi, foodApi, userApi } from "@/lib/api";
 
 const StoreDashboard = () => {
-  const [activeTab, setActiveTab] = useState("orders");
+  const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newOrdersCount, setNewOrdersCount] = useState(3);
+  const [notifications, setNotifications] = useState([
+    { id: 1, message: "New order #1234 received", time: "5 min ago", urgent: true },
+    { id: 2, message: "Inventory low for Bread", time: "1 hour ago", urgent: false },
+    { id: 3, message: "Customer review received", time: "2 hours ago", urgent: false }
+  ]);
   const { currentUser, userRole, backendUser } = useAuth();
   const navigate = useNavigate();
 
@@ -242,38 +268,56 @@ const StoreDashboard = () => {
           </div>
           
           <nav className="p-4 space-y-2">
-            <Button
-              variant={activeTab === "orders" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("orders")}
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Orders ({storeStats.pendingOrders})
-            </Button>
-            <Button
-              variant={activeTab === "overview" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("overview")}
-            >
-              <Home className="h-4 w-4 mr-2" />
-              Overview
-            </Button>
-            <Button
-              variant={activeTab === "listings" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("listings")}
-            >
-              <List className="h-4 w-4 mr-2" />
-              My Listings
-            </Button>
-            <Button
-              variant={activeTab === "analytics" ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("analytics")}
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Analytics
-            </Button>
+            {/* Overview Section */}
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
+                🏪 Business Hub
+              </div>
+              <Button
+                variant={activeTab === "overview" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("overview")}
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Overview
+              </Button>
+              <Button
+                variant={activeTab === "orders" ? "default" : "ghost"}
+                className="w-full justify-start relative"
+                onClick={() => setActiveTab("orders")}
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Orders
+                {newOrdersCount > 0 && (
+                  <Badge variant="destructive" className="ml-auto h-4 w-4 p-0 text-xs flex items-center justify-center">
+                    {newOrdersCount}
+                  </Badge>
+                )}
+              </Button>
+            </div>
+
+            {/* Operations Section */}
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 px-2">
+                ⚙️ Operations
+              </div>
+              <Button
+                variant={activeTab === "listings" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("listings")}
+              >
+                <Package className="h-4 w-4 mr-2" />
+                Inventory
+              </Button>
+              <Button
+                variant={activeTab === "analytics" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("analytics")}
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Performance
+              </Button>
+            </div>
             <Button
               variant={activeTab === "settings" ? "default" : "ghost"}
               className="w-full justify-start"
@@ -443,12 +487,23 @@ const StoreDashboard = () => {
         {/* Content based on active tab */}
         {activeTab === "orders" && (
           <div className="space-y-6">
+            {/* Orders Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-bold">Customer Orders</h2>
-                <p className="text-muted-foreground">
-                  Manage customer orders and track fulfillment
+                <h2 className="text-3xl font-bold text-gray-900">📦 Order Management</h2>
+                <p className="text-gray-600 mt-1">
+                  Track orders, manage fulfillment, and delight your customers
                 </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-green-600 border-green-200">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  {storeStats.completedOrders} Completed
+                </Badge>
+                <Badge variant="outline" className="text-orange-600 border-orange-200">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {storeStats.pendingOrders} Pending
+                </Badge>
               </div>
             </div>
 
@@ -548,39 +603,122 @@ const StoreDashboard = () => {
         )}
 
         {activeTab === "overview" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {listings.map((item) => {
-                    const daysLeft = Math.ceil((new Date(item.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                    return (
-                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-semibold">{item.name}</h4>
-                          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                            <span>Stock: {item.stock}</span>
-                            <span>Sold: {item.sold}</span>
-                            <span>Expires: {daysLeft}d left</span>
-                            <Badge variant="secondary">{item.category}</Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg font-bold text-fresh">
-                            {formatCurrency(item.discountedPrice)}
-                          </span>
-                          <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>
-                            {item.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    );
-                  })}
+          <div className="space-y-6">
+            {/* Welcome Banner */}
+            <Card className="bg-gradient-to-r from-fresh-50 to-green-50 border-fresh-200">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold text-fresh-800">
+                      Welcome back, {backendUser?.name}! 👋
+                    </h1>
+                    <p className="text-fresh-600 mt-1">
+                      Your store is performing well. Here's what's happening today.
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-fresh-600">Today's Sales</div>
+                    <div className="text-2xl font-bold text-fresh-800">
+                      {formatCurrency(1250.50)}
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Live Activity Feed */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-yellow-500" />
+                  Live Activity Feed
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {notifications.map((notification) => (
+                    <div key={notification.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 border-l-4 border-fresh-200">
+                      <Bell className={`h-4 w-4 mt-0.5 ${notification.urgent ? 'text-red-500' : 'text-gray-500'}`} />
+                      <div className="flex-1">
+                        <p className="font-medium">{notification.message}</p>
+                        <p className="text-sm text-gray-500">{notification.time}</p>
+                      </div>
+                      {notification.urgent && (
+                        <Badge variant="destructive" className="animate-pulse">Urgent</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 text-center">
+                  <Plus className="h-8 w-8 text-fresh mx-auto mb-2" />
+                  <h3 className="font-semibold">Add New Listing</h3>
+                  <p className="text-sm text-gray-600">Quick sell expiring food</p>
+                </CardContent>
+              </Card>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardContent className="p-4 text-center">
+                  <TrendingUp className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                  <h3 className="font-semibold">View Analytics</h3>
+                  <p className="text-sm text-gray-600">Track your performance</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Store Performance Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Target className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {Math.round((storeStats.totalRevenue / 1500) * 100)}%
+                      </div>
+                      <div className="text-sm text-gray-600">Monthly Goal</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Award className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        4.8⭐
+                      </div>
+                      <div className="text-sm text-gray-600">Avg Rating</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <ChefHat className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600">
+                        {storeStats.totalOrders}
+                      </div>
+                      <div className="text-sm text-gray-600">Total Orders</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         )}
 
         {activeTab === "listings" && (
