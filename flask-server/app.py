@@ -16,15 +16,16 @@ def create_app():
     from routes.foods import food_bp
     from routes.users import user_bp
     from routes.purchases import purchase_bp
+    from routes.admin import admin_bp
 
     app.register_blueprint(food_bp, url_prefix="/api/foods")
     app.register_blueprint(user_bp, url_prefix="/api/users")
     app.register_blueprint(purchase_bp, url_prefix="/api/purchases")
+    app.register_blueprint(admin_bp, url_prefix="/api")
 
     @app.route("/")
     def home():
         return "Last Bite Rescue API is running!"
-
 
     return app
 

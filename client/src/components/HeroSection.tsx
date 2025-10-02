@@ -48,7 +48,7 @@ const HeroSection = () => {
               className="border-fresh text-fresh hover:bg-fresh hover:text-white"
               asChild
             >
-              <Link to="/signin">
+              <Link to="/store-owner-landing">
                 For Store Owners
               </Link>
             </Button>

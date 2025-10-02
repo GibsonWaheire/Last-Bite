@@ -28,6 +28,8 @@ class UserCreateSchema(Schema):
 
 class FoodListingCreateSchema(Schema):
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
+    description = fields.Str(allow_none=True)
+    category = fields.Str(required=True)
     user_id = fields.Int(required=True)
     stock = fields.Int(validate=validate.Range(min=0), missing=1)
     price = fields.Float(validate=validate.Range(min=0), missing=0.0)

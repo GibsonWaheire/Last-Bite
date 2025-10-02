@@ -171,3 +171,100 @@ export const purchaseApi = {
     return result.data;
   },
 };
+
+// Admin API functions
+export const adminApi = {
+  // Admin login
+  async adminLogin(email: string, secretKey: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/admin/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, secret_key: secretKey }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Admin authentication failed');
+    }
+
+    const result: ApiResponse<any> = await response.json();
+    return result.data;
+  },
+
+  // Get all users (admin only)
+  async getAllUsers(): Promise<User[]> {
+    const response = await fetch(`${API_BASE_URL}/admin/users`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch users');
+    }
+
+    const result: ApiResponse<User[]> = await response.json();
+    return result.data;
+  },
+
+  // Get all food listings (admin only)
+  async getAllFoods(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/admin/foods`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch food listings');
+    }
+
+    const result: ApiResponse<any[]> = await response.json();
+    return result.data;
+  },
+
+  // Get all purchases (admin only)
+  async getAllPurchases(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/admin/purchases`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch purchases');
+    }
+
+    const result: ApiResponse<any[]> = await response.json();
+    return result.data;
+  },
+
+  // Delete food listing (admin only)
+  async deleteFood(foodId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/admin/foods/${foodId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete food listing');
+    }
+  },
+
+  // Toggle user status (admin only)
+  async toggleUserStatus(userId: number): Promise<User> {
+    const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle-status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to toggle user status');
+    }
+
+    const result: ApiResponse<User> = await response.json();
+    return result.data;
+  },
+
+  // Get system statistics (admin only)
+  async getSystemStats(): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/admin/stats`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch system statistics');
+    }
+
+    const result: ApiResponse<any> = await response.json();
+    return result.data;
+  },
+};
