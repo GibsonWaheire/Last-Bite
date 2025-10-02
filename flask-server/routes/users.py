@@ -35,7 +35,17 @@ def create_user():
     except ValidationError as err:
         return jsonify({"message": "Validation error", "errors": err.messages}), 400
     
-    user = User(name=validated_data["name"])
+    # Check if user with email already exists
+    existing_user = User.query.filter_by(email=validated_data["email"]).first()
+    if existing_user:
+        return jsonify({"message": "User with this email already exists"}), 400
+    
+    user = User(
+        name=validated_data["name"],
+        email=validated_data["email"],
+        role=validated_data["role"],
+        firebase_uid=validated_data.get("firebase_uid")
+    )
     
     try:
         db.session.add(user)
@@ -87,3 +97,81 @@ def delete_user(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "Failed to delete user"}), 500
+
+@user_bp.route("/by-email/<email>", methods=["GET"])
+def get_user_by_email(email):
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+    return jsonify({
+        "message": f"User with email {email} retrieved successfully",
+        "data": user_schema.dump(user)
+    }), 200
+
+@user_bp.route("/by-firebase-uid/<firebase_uid>", methods=["GET"])
+def get_user_by_firebase_uid(firebase_uid):
+    user = User.query.filter_by(firebase_uid=firebase_uid).first()
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+    return jsonify({
+        "message": f"User with Firebase UID {firebase_uid} retrieved successfully",
+        "data": user_schema.dump(user)
+    }), 200
+
+@user_bp.route("/sync-firebase", methods=["POST"])
+def sync_firebase_user():
+    try:
+        data = request.json
+        firebase_uid = data.get("firebase_uid")
+        email = data.get("email")
+        name = data.get("name")
+        
+        if not firebase_uid or not email:
+            return jsonify({"message": "Firebase UID and email are required"}), 400
+        
+        # Check if user already exists by Firebase UID
+        existing_user = User.query.filter_by(firebase_uid=firebase_uid).first()
+        if existing_user:
+            return jsonify({
+                "message": "User already exists",
+                "data": user_schema.dump(existing_user)
+            }), 200
+        
+        # Check if user exists by email
+        existing_email_user = User.query.filter_by(email=email).first()
+        if existing_email_user:
+            # Update existing user with Firebase UID
+            existing_email_user.firebase_uid = firebase_uid
+            db.session.commit()
+            return jsonify({
+                "message": "User updated with Firebase UID",
+                "data": user_schema.dump(existing_email_user)
+            }), 200
+        
+        # Determine role based on email
+        if email.endswith('@store.'):
+            role = 'store_owner'
+        elif email.endswith('@admin.'):
+            role = 'admin'
+        else:
+            role = 'customer'
+        
+        # Create new user
+        user = User(
+            name=name or email.split('@')[0],
+            email=email,
+            role=role,
+            firebase_uid=firebase_uid
+        )
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "User created and synced with Firebase",
+            "data": user_schema.dump(user)
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": "Failed to sync user with Firebase"}), 500

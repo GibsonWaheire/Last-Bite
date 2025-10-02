@@ -3,6 +3,9 @@ from extensions import db
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='customer')  # customer, store_owner, admin
+    firebase_uid = db.Column(db.String(128), unique=True, nullable=True)  # Firebase UID for linking
     
     # One-to-many relationship: User has many FoodListings
     food_listings = db.relationship('FoodListing', backref='owner', lazy=True, cascade='all, delete-orphan')

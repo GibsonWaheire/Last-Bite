@@ -22,6 +22,9 @@ class PurchaseSchema(SQLAlchemyAutoSchema):
 # Validation schemas for input
 class UserCreateSchema(Schema):
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
+    email = fields.Str(required=True, validate=validate.Email())
+    role = fields.Str(required=True, validate=validate.OneOf(['customer', 'store_owner', 'admin']))
+    firebase_uid = fields.Str(allow_none=True)
 
 class FoodListingCreateSchema(Schema):
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
