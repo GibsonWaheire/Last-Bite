@@ -1,0 +1,162 @@
+# Create food listing operation for store owners
+query CreateFoodListing(
+  $name: String!
+  $originalPrice: Float!
+  $discountedPrice: Float!
+  $quantity: Int!
+  $expiryDate: Date!
+  $description: String
+  $imageUrl: String
+  $category: String
+  $storeId: ID!
+) {
+  insertFoodItemOne(
+    _set: {
+      name: $name
+      originalPrice: $originalPrice
+      discountedPrice: $discountedPrice
+      quantity: $quantity
+      expiryDate: $expiryDate
+      description: $description
+      imageUrl: $imageUrl
+      category: $category
+      storeId: $storeId
+    }
+  ) {
+    id
+    name
+    originalPrice
+    discountedPrice
+    quantity
+    expiryDate
+    createdAt
+  }
+}
+
+# Get food listings for customers to browse
+query GetFoodListings(
+  $limit: Int
+  $offset: Int
+  $category: String
+  $sortBy: String
+) {
+  findManyFoodItem(
+    filter: {
+      quantity: { gte: 1 }
+      category: $category
+    }
+    sort: [$sortBy]
+    limit: $limit
+    offset: $offset
+  ) {
+    nodes {
+      id
+      name
+      originalPrice
+      discountedPrice
+      quantity
+      expiryDate
+      description
+      imageUrl
+      category
+      store {
+        name
+        address
+        phoneNumber
+      }
+      createdAt
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}
+
+# Create purchase operation for customers
+query CreatePurchase(
+  $customerId: ID!
+  $foodItemId: ID!
+  $quantity: Int!
+  $priceAtPurchase: Float!
+  $totalAmount: Float!
+) {
+  insertOrderOne(
+    _set: {
+      orderDate: "now()"
+      totalAmount: $totalAmount
+      status: "COMPLETED"
+      customerId: $customerId
+    }
+  ) {
+    id
+    orderDate
+    totalAmount
+    status
+  }
+  
+  insertOrderItemOne(
+    _set: {
+      quantity: $quantity
+      priceAtPurchase: $priceAtPurchase
+      orderId: "id"
+      foodItemId: $foodItemId
+    }
+  ) {
+    id
+    quantity
+    priceAtPurchase
+  }
+  
+  updateFoodItemById(
+    id: $foodItemId
+    _set: {
+      quantity: { subtract: $quantity }
+    }
+  ) {
+    id
+    quantity
+  }
+}
+
+# Get user purchases for tracking history
+query GetUserPurchases(
+  $customerId: ID!
+  $limit: Int
+  $offset: Int
+) {
+  findManyOrder(
+    filter: {
+      customerId: { eq: $customerId }
+    }
+    sort: [{ orderDate: "desc" }]
+    limit: $limit
+    offset: $offset
+  ) {
+    nodes {
+      id
+      orderDate
+      totalAmount
+      status
+      orderItems {
+        nodes {
+          quantity
+          priceAtPurchase
+          foodItem {
+            name
+            category
+            discountedPrice
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+    }
+    totalCount
+  }
+}

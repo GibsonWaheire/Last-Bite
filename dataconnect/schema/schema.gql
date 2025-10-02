@@ -1,0 +1,49 @@
+type User @table {
+  email: String!
+  displayName: String!
+  role: String! # CUSTOMER, STORE_OWNER, ADMIN
+  createdAt: Timestamp!
+  phoneNumber: String
+  address: String
+}
+
+type Store @table {
+  name: String!
+  address: String!
+  phoneNumber: String!
+  createdAt: Timestamp!
+  status: String! # PENDING, APPROVED, REJECTED
+  owner: User
+  description: String
+  website: String
+  businessHours: String
+}
+
+type FoodItem @table {
+  name: String!
+  originalPrice: Float!
+  discountedPrice: Float!
+  quantity: Int!
+  expiryDate: Date!
+  createdAt: Timestamp!
+  updatedAt: Timestamp!
+  store: Store
+  description: String
+  imageUrl: String
+  category: String
+}
+
+type Order @table {
+  orderDate: Timestamp!
+  totalAmount: Float!
+  status: String! # PENDING, COMPLETED, CANCELLED
+  createdAt: Timestamp!
+  customer: User
+}
+
+type OrderItem @table(key: ["order", "foodItem"]) {
+  quantity: Int!
+  priceAtPurchase: Float!
+  order: Order!
+  foodItem: FoodItem!
+}

@@ -9,18 +9,16 @@ import { getAnalytics } from "firebase/analytics";
 
 // web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCIv7B1kpPSb4nDkhwEvBVE4S3fX1YdmqU",
-  authDomain: "biteme-e4144.firebaseapp.com",
-  projectId: "biteme-e4144",
-  storageBucket: "biteme-e4144.firebasestorage.app",
-  messagingSenderId: "932724242033",
-  appId: "1:932724242033:web:7ec5b5c72a39749dd58dd0",
-  measurementId: "G-HES9DS3NZT"
+  apiKey: "AIzaSyDYincEs3zt2h9Z-cl-STAhPCPfHmm9FJU",
+  authDomain: "lastbite-food-rescue.firebaseapp.com",
+  projectId: "lastbite-food-rescue",
+  storageBucket: "lastbite-food-rescue.firebasestorage.app",
+  messagingSenderId: "223064637589",
+  appId: "1:223064637589:web:5352c667434c7922675b9c"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 
 //  INITIALIZE AND EXPORT THE AUTH SERVICE
 export const auth = getAuth(app); // <--- Add this line!
