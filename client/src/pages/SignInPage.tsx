@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,13 +11,24 @@ import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase-config";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { signInValidationSchema, initialSignInValues } from "@/lib/validations";
+import { userApi } from "@/lib/api";
 
 const SignInPage = () => {
   const [showPasswordCustomer, setShowPasswordCustomer] = useState(false);
   const [showPasswordStore, setShowPasswordStore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("customer");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Set initial tab based on URL parameter
+  useEffect(() => {
+    const role = searchParams.get('role');
+    if (role === 'store' || role === 'store_owner') {
+      setActiveTab("store-owner");
+    }
+  }, [searchParams]);
 
   // No auto-redirects; submission handlers route by role
 
@@ -41,13 +52,20 @@ const SignInPage = () => {
     setSubmitting(true);
 
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const cred = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const backendUser = await userApi.syncFirebaseUser(cred.user.uid, values.email, cred.user.displayName || values.email.split('@')[0]);
+      
+      if (backendUser.role !== 'customer') {
+        toast.error("This email is not registered as a customer. Please use the 'Store Owner' tab or a customer email.");
+        await auth.signOut(); // Sign out if role mismatch
+        return;
+      }
+
       toast.success("Signed in successfully as customer!");
       navigate("/user-dashboard");
     } catch (error: unknown) {
-      console.error("Sign-in error:", error);
+      console.error("Customer sign-in error:", error);
       let errorMessage = "An unknown error occurred. Please try again.";
-      
       if (error && typeof error === 'object' && 'code' in error) {
         const firebaseError = error as { code: string };
         if (firebaseError.code === "auth/invalid-credential") {
@@ -62,7 +80,6 @@ const SignInPage = () => {
           errorMessage = `Error: ${firebaseError.code.split('/')[1].replace(/-/g, ' ')}`;
         }
       }
-      
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -75,11 +92,19 @@ const SignInPage = () => {
     setSubmitting(true);
 
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const cred = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const backendUser = await userApi.syncFirebaseUser(cred.user.uid, values.email, cred.user.displayName || values.email.split('@')[0]);
+      
+      if (backendUser.role !== 'store_owner') {
+        toast.error("This email is not registered as a store owner. Please use the 'Customer' tab or a store owner email.");
+        await auth.signOut(); // Sign out if role mismatch
+        return;
+      }
+
       toast.success("Signed in successfully as store owner!");
       navigate("/store-dashboard");
     } catch (error: unknown) {
-      console.error("Store sign-in error:", error);
+      console.error("Store owner sign-in error:", error);
       let errorMessage = "An unknown error occurred. Please try again.";
       if (error && typeof error === 'object' && 'code' in error) {
         const firebaseError = error as { code: string };
@@ -110,10 +135,10 @@ const SignInPage = () => {
           <CardDescription>Use the toggle to choose your role</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="customer">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="customer">Customer</TabsTrigger>
-              <TabsTrigger value="store">Store Owner</TabsTrigger>
+              <TabsTrigger value="store-owner">Store Owner</TabsTrigger>
             </TabsList>
 
             <TabsContent value="customer" className="mt-4">
@@ -147,7 +172,7 @@ const SignInPage = () => {
               </Formik>
             </TabsContent>
 
-            <TabsContent value="store" className="mt-4">
+            <TabsContent value="store-owner" className="mt-4">
               <Formik initialValues={initialSignInValues} validationSchema={signInValidationSchema} onSubmit={handleStoreOwnerSignIn}>
                 {({ isSubmitting, values, setFieldValue }) => (
                   <Form className="grid gap-4">

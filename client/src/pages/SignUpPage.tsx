@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,8 +19,18 @@ const SignUpPage = () => {
   const [showPasswordStore, setShowPasswordStore] = useState(false);
   const [showConfirmPasswordStore, setShowConfirmPasswordStore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("customer");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Set initial tab based on URL parameter
+  useEffect(() => {
+    const role = searchParams.get('role');
+    if (role === 'store' || role === 'store_owner') {
+      setActiveTab("store-owner");
+    }
+  }, [searchParams]);
 
   // No auto-redirects here; each submit will route accordingly
 
@@ -127,10 +137,10 @@ const SignUpPage = () => {
           <CardDescription>Use the toggle to choose your role</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="customer">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="customer">Customer</TabsTrigger>
-              <TabsTrigger value="store">Store Owner</TabsTrigger>
+              <TabsTrigger value="store-owner">Store Owner</TabsTrigger>
             </TabsList>
 
             <TabsContent value="customer" className="mt-4">
@@ -239,7 +249,7 @@ const SignUpPage = () => {
               </Formik>
             </TabsContent>
 
-            <TabsContent value="store" className="mt-4">
+            <TabsContent value="store-owner" className="mt-4">
               <Formik initialValues={initialSignUpValues} validationSchema={signUpValidationSchema} onSubmit={handleStoreOwnerSignUp}>
                 {({ isSubmitting, values, setFieldValue }) => (
                   <Form className="grid gap-4">
