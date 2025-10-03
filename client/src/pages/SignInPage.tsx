@@ -110,9 +110,21 @@ const SignInPage = () => {
           return;
         }
       } catch (error) {
-        toast.error("User not found. Please sign up as a store owner first.");
-        await auth.signOut();
-        return;
+        // If user not found in backend, but Firebase auth succeeded, 
+        // this means they signed up with Firebase but backend sync failed
+        // Let's create the backend user now
+        try {
+          backendUser = await userApi.createUser({
+            name: cred.user.displayName || values.email.split('@')[0],
+            email: values.email,
+            role: 'store_owner',
+            firebase_uid: cred.user.uid,
+          });
+        } catch (createError) {
+          toast.error("Failed to create backend user. Please try signing up again.");
+          await auth.signOut();
+          return;
+        }
       }
       
       // Sync Firebase user but preserve the store_owner role
