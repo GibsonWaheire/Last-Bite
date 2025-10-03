@@ -10,6 +10,25 @@ export interface User {
   firebase_uid?: string;
 }
 
+export interface FoodListing {
+  id: number;
+  name: string;
+  description?: string;
+  category: string;
+  user_id: number;
+  stock: number;
+  price: number;
+  expiry_date?: string;
+}
+
+export interface Purchase {
+  id: number;
+  user_id: number;
+  food_id: number;
+  quantity_bought: number;
+  purchase_date: string;
+}
+
 export interface ApiResponse<T> {
   message: string;
   data: T;
@@ -97,31 +116,31 @@ export const userApi = {
 // Food listing API functions
 export const foodApi = {
   // Get all food listings
-  async getAllFoods(): Promise<any[]> {
+  async getAllFoods(): Promise<FoodListing[]> {
     const response = await fetch(`${API_BASE_URL}/foods/`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch food listings');
     }
 
-    const result: ApiResponse<any[]> = await response.json();
+    const result: ApiResponse<FoodListing[]> = await response.json();
     return result.data;
   },
 
   // Get food by ID
-  async getFoodById(id: number): Promise<any> {
+  async getFoodById(id: number): Promise<FoodListing> {
     const response = await fetch(`${API_BASE_URL}/foods/${id}`);
     
     if (!response.ok) {
       throw new Error('Food listing not found');
     }
 
-    const result: ApiResponse<any> = await response.json();
+    const result: ApiResponse<FoodListing> = await response.json();
     return result.data;
   },
 
   // Create food listing
-  async createFood(foodData: any): Promise<any> {
+  async createFood(foodData: Omit<FoodListing, 'id'>): Promise<FoodListing> {
     const response = await fetch(`${API_BASE_URL}/foods/`, {
       method: 'POST',
       headers: {
@@ -129,12 +148,12 @@ export const foodApi = {
       },
       body: JSON.stringify(foodData),
     });
-
+    
     if (!response.ok) {
       throw new Error('Failed to create food listing');
     }
 
-    const result: ApiResponse<any> = await response.json();
+    const result: ApiResponse<FoodListing> = await response.json();
     return result.data;
   },
 };
@@ -142,19 +161,19 @@ export const foodApi = {
 // Purchase API functions
 export const purchaseApi = {
   // Get all purchases
-  async getAllPurchases(): Promise<any[]> {
+  async getAllPurchases(): Promise<Purchase[]> {
     const response = await fetch(`${API_BASE_URL}/purchases/`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch purchases');
     }
 
-    const result: ApiResponse<any[]> = await response.json();
+    const result: ApiResponse<Purchase[]> = await response.json();
     return result.data;
   },
 
   // Create purchase
-  async createPurchase(purchaseData: any): Promise<any> {
+  async createPurchase(purchaseData: Omit<Purchase, 'id'>): Promise<Purchase> {
     const response = await fetch(`${API_BASE_URL}/purchases/`, {
       method: 'POST',
       headers: {
@@ -167,15 +186,22 @@ export const purchaseApi = {
       throw new Error('Failed to create purchase');
     }
 
-    const result: ApiResponse<any> = await response.json();
+    const result: ApiResponse<Purchase> = await response.json();
     return result.data;
   },
 };
 
+export interface SystemStats {
+  totalUsers: number;
+  totalFoods: number;
+  totalPurchases: number;
+  activeUsers: number;
+}
+
 // Admin API functions
 export const adminApi = {
   // Admin login
-  async adminLogin(email: string, secretKey: string): Promise<any> {
+  async adminLogin(email: string, secretKey: string): Promise<{ token: string; user: User }> {
     const response = await fetch(`${API_BASE_URL}/admin/login`, {
       method: 'POST',
       headers: {
@@ -188,7 +214,7 @@ export const adminApi = {
       throw new Error('Admin authentication failed');
     }
 
-    const result: ApiResponse<any> = await response.json();
+    const result: ApiResponse<{ token: string; user: User }> = await response.json();
     return result.data;
   },
 
@@ -205,26 +231,26 @@ export const adminApi = {
   },
 
   // Get all food listings (admin only)
-  async getAllFoods(): Promise<any[]> {
+  async getAllFoods(): Promise<FoodListing[]> {
     const response = await fetch(`${API_BASE_URL}/admin/foods`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch food listings');
     }
 
-    const result: ApiResponse<any[]> = await response.json();
+    const result: ApiResponse<FoodListing[]> = await response.json();
     return result.data;
   },
 
   // Get all purchases (admin only)
-  async getAllPurchases(): Promise<any[]> {
+  async getAllPurchases(): Promise<Purchase[]> {
     const response = await fetch(`${API_BASE_URL}/admin/purchases`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch purchases');
     }
 
-    const result: ApiResponse<any[]> = await response.json();
+    const result: ApiResponse<Purchase[]> = await response.json();
     return result.data;
   },
 
@@ -257,14 +283,14 @@ export const adminApi = {
   },
 
   // Get system statistics (admin only)
-  async getSystemStats(): Promise<any> {
+  async getSystemStats(): Promise<SystemStats> {
     const response = await fetch(`${API_BASE_URL}/admin/stats`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch system statistics');
     }
 
-    const result: ApiResponse<any> = await response.json();
+    const result: ApiResponse<SystemStats> = await response.json();
     return result.data;
   },
 };

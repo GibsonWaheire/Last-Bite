@@ -12,6 +12,7 @@ import { auth } from "../firebase-config";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { signInValidationSchema, initialSignInValues } from "@/lib/validations";
 import { userApi } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SignInPage = () => {
   const [showPasswordCustomer, setShowPasswordCustomer] = useState(false);
@@ -21,6 +22,7 @@ const SignInPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const cardRef = useRef<HTMLDivElement>(null);
+  const { setUserRole, setBackendUser } = useAuth();
 
   // Set initial tab based on URL parameter
   useEffect(() => {
@@ -60,6 +62,10 @@ const SignInPage = () => {
         await auth.signOut(); // Sign out if role mismatch
         return;
       }
+
+      // Explicitly set the role and backend user in AuthContext
+      setUserRole('customer');
+      setBackendUser(backendUser);
 
       toast.success("Signed in successfully as customer!");
       navigate("/user-dashboard");
@@ -104,13 +110,29 @@ const SignInPage = () => {
           return;
         }
       } catch (error) {
-        toast.error("User not found. Please sign up as a store owner first.");
-        await auth.signOut();
-        return;
+        // If user not found in backend, but Firebase auth succeeded, 
+        // this means they signed up with Firebase but backend sync failed
+        // Let's create the backend user now
+        try {
+          backendUser = await userApi.createUser({
+            name: cred.user.displayName || values.email.split('@')[0],
+            email: values.email,
+            role: 'store_owner',
+            firebase_uid: cred.user.uid,
+          });
+        } catch (createError) {
+          toast.error("Failed to create backend user. Please try signing up again.");
+          await auth.signOut();
+          return;
+        }
       }
       
       // Sync Firebase user but preserve the store_owner role
       await userApi.syncFirebaseUser(cred.user.uid, values.email, cred.user.displayName || values.email.split('@')[0]);
+
+      // Explicitly set the role and backend user in AuthContext
+      setUserRole('store_owner');
+      setBackendUser(backendUser);
 
       toast.success("Signed in successfully as store owner!");
       navigate("/store-dashboard");

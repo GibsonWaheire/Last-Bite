@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [backendUser, setBackendUser] = useState<BackendUser | null>(null);
 
   // Function to sync Firebase user with backend
-  const syncUserWithBackend = async (firebaseUser: User) => {
+  const syncUserWithBackend = async (firebaseUser: User, preserveRole: boolean = false) => {
     try {
       const backendUserData = await userApi.syncFirebaseUser(
         firebaseUser.uid,
@@ -44,17 +44,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User'
       );
       setBackendUser(backendUserData);
-      setUserRole(backendUserData.role as UserRole);
+      
+      // Only set role if we're not preserving an existing role
+      if (!preserveRole) {
+        setUserRole(backendUserData.role as UserRole);
+      }
     } catch (error) {
       console.error('Failed to sync user with backend:', error);
-      // Fallback to email-based role determination
-      const email = firebaseUser.email || '';
-      if (email.includes('@store.')) {
-        setUserRole('store_owner');
-      } else if (email.includes('@admin.')) {
-        setUserRole('admin');
-      } else {
-        setUserRole('customer');
+      // If backend sync fails, don't override existing role
+      if (!preserveRole) {
+        setUserRole(null);
+        setBackendUser(null);
       }
     }
   };
@@ -64,7 +64,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        await syncUserWithBackend(user);
+        // If we already have a role set, preserve it during sync
+        const shouldPreserveRole = userRole !== null;
+        await syncUserWithBackend(user, shouldPreserveRole);
       } else {
         setUserRole(null);
         setBackendUser(null);

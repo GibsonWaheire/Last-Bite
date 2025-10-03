@@ -24,6 +24,7 @@ const SignUpPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const cardRef = useRef<HTMLDivElement>(null);
+  const { setUserRole } = useAuth();
 
   // Set initial tab based on URL parameter
   useEffect(() => {
@@ -59,13 +60,22 @@ const SignUpPage = () => {
     try {
       const cred = await createUserWithEmailAndPassword(auth, values.email, values.password);
       
-      // TODO: Re-enable backend user creation when backend is deployed
-      // await userApi.createUser({
-      //   name: values.name,
-      //   email: values.email,
-      //   role: 'customer',
-      //   firebase_uid: cred.user.uid,
-      // });
+      // Create backend user (or sync if already exists)
+      try {
+        await userApi.createUser({
+          name: values.name,
+          email: values.email,
+          role: 'customer',
+          firebase_uid: cred.user.uid,
+        });
+      } catch (error: any) {
+        // If user already exists, try to sync Firebase UID
+        if (error.message?.includes('already exists')) {
+          await userApi.syncFirebaseUser(cred.user.uid, values.email, values.name);
+        } else {
+          throw error;
+        }
+      }
       
       // Set role in AuthContext for dashboard navigation
       setUserRole('customer');
@@ -105,15 +115,24 @@ const SignUpPage = () => {
     try {
       const cred = await createUserWithEmailAndPassword(auth, values.email, values.password);
       
-      // TODO: Re-enable backend user creation when backend is deployed
-      // await userApi.createUser({
-      //   name: values.name,
-      //   email: values.email,
-      //   role: 'store_owner',
-      //   firebase_uid: cred.user.uid,
-      // });
+      // Create backend user (or sync if already exists)
+      try {
+        await userApi.createUser({
+          name: values.name,
+          email: values.email,
+          role: 'store_owner',
+          firebase_uid: cred.user.uid,
+        });
+      } catch (error: any) {
+        // If user already exists, try to sync Firebase UID
+        if (error.message?.includes('already exists')) {
+          await userApi.syncFirebaseUser(cred.user.uid, values.email, values.name);
+        } else {
+          throw error;
+        }
+      }
       
-      // Set role in AuthContext for dashboard dashboard navigation
+      // Set role in AuthContext for dashboard navigation
       setUserRole('store_owner');
       
       toast.success("Store owner account created successfully! Welcome!");
