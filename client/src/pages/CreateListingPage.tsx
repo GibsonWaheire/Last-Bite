@@ -11,14 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Upload, Plus, Save, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { CalendarIcon, Plus, Save, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { foodListingValidationSchema, initialFoodListingValues } from "@/lib/validations";
-import { formatCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { foodApi}` from "@/lib/api";
+import { foodApi } from "@/lib/api";
 
 const CreateListingPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,17 +33,7 @@ const CreateListingPage = () => {
     }
   }, [currentUser, userRole, navigate]);
 
-  const categories = [
-    "Bakery",
-    "Produce", 
-    "Dairy",
-    "Meat",
-    "Seafood",
-    "Pantry",
-    "Frozen",
-    "Beverages",
-    "Snacks"
-  ];
+  const categories = ["Bakery", "Produce", "Dairy", "Meat", "Seafood", "Pantry", "Frozen", "Beverages", "Snacks"];
 
   // Get saved form data or use initial values
   const getInitialValues = () => {
@@ -71,7 +60,7 @@ const CreateListingPage = () => {
 
   const onSubmit = async (values: typeof initialFoodListingValues, { resetForm }: { resetForm: () => void }) => {
     setIsSubmitting(true);
-    
+
     try {
       // Check authentication first
       if (!currentUser || !backendUser) {
@@ -83,34 +72,35 @@ const CreateListingPage = () => {
       // Prepare data for API
       const listingData = {
         ...values,
-        user_id: backendUser.id, // Use authenticated user ID
+        user_id: backendUser.id,
         expiry_date: values.expiry_date ? new Date(values.expiry_date).toISOString().split('T')[0] : null
       };
 
       console.log("Creating listing:", listingData);
 
       // Call API
-      const result = await foodApi.createFood({ 
+      const result = await foodApi.createFood({
         ...listingData,
-        user_id: backendUser.id 
+        user_id: backendUser.id
       });
-      
+
       console.log("Listing created:", result);
-      
+
       // Clear saved draft
       localStorage.removeItem('lastbite_draft_listing');
-      
+
       // Reset form
       resetForm();
-      
+
       toast.success("Food listing created successfully!");
-      
+
       // Navigate to store dashboard
       navigate('/store-dashboard');
-      
-    } catch (error: any) {
+
+    } catch (error: unknown) {
       console.error("Error creating listing:", error);
-      toast.error(error.message || "Failed to create listing. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Failed to create listing. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -130,17 +120,15 @@ const CreateListingPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            Create Food Listing
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Create Food Listing</h1>
           <p className="text-lg text-muted-foreground">
             List your food items for customers to discover and purchase
           </p>
-          
+
           {/* Draft Saved Notification */}
           {localStorage.getItem('lastbite_draft_listing') && (
             <div className="flex items-center space-x-2 p-3 bg-blue-50 border border-blue-200 rounded-lg mt-4">
@@ -172,22 +160,17 @@ const CreateListingPage = () => {
                   const updateValuesAsync = () => {
                     setFormValuesForSave(values);
                   };
-                  
+
                   // Schedule the update after render
                   setTimeout(updateValuesAsync, 0);
-                  
+
                   return (
                     <Form className="space-y-6">
                       {/* Basic Information */}
                       <div className="space-y-4">
                         <div>
                           <Label htmlFor="name">Food Item Name *</Label>
-                          <Field
-                            as={Input}
-                            id="name"
-                            name="name"
-                            placeholder="e.g., Artisan Sourdough Bread"
-                          />
+                          <Field as={Input} id="name" name="name" placeholder="e.g., Artisan Sourdough Bread" />
                           <ErrorMessage name="name" component="p" className="text-sm text-red-500 mt-1" />
                         </div>
 
@@ -224,18 +207,10 @@ const CreateListingPage = () => {
                       {/* Pricing */}
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Pricing</h3>
-                        
+
                         <div>
-                          <Label htmlFor="price">Price (KES) *</-label>
-                          <Field
-                            as={Input}
-                            id="price"
-                            name="price"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="399.00"
-                          />
+                          <Label htmlFor="price">Price (KES) *</Label>
+                          <Field as={Input} id="price" name="price" type="number" step="0.01" min="0" placeholder="399.00" />
                           <ErrorMessage name="price" component="p" className="text-sm text-red-500 mt-1" />
                         </div>
                       </div>
@@ -243,23 +218,16 @@ const CreateListingPage = () => {
                       {/* Inventory & Expiry */}
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Inventory & Expiry</h3>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="stock">Stock Quantity *</Label>
-                            <Field
-                              as={Input}
-                              id="stock"
-                              name="stock"
-                              type="number"
-                              min="1"
-                              placeholder="12"
-                            />
+                            <Field as={Input} id="stock" name="stock" type="number" min="1" placeholder="12" />
                             <ErrorMessage name="stock" component="p" className="text-sm text-red-500 mt-1" />
                           </div>
 
                           <div>
-                            <Label>Expiry.date</Label>
+                            <Label>Expiry Date</Label>
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button
@@ -291,7 +259,7 @@ const CreateListingPage = () => {
                       {/* Authentication Status */}
                       <div className="space-y-4">
                         <h3 className="text-lg font-semibold">Store Owner Info</h3>
-                        
+
                         <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                           <CheckCircle className="h-4 w-4 text-green-600" />
                           <span className="text-sm text-green-800">
@@ -302,18 +270,10 @@ const CreateListingPage = () => {
 
                       {/* Submit Button */}
                       <div className="flex justify-end space-x-4 pt-6">
-                        <Button 
-                          type="button" 
-                          variant="outline"
-                          onClick={() => window.location.reload()}
-                        >
+                        <Button type="button" variant="outline" onClick={() => window.location.reload()}>
                           Cancel
                         </Button>
-                        <Button 
-                          type="submit" 
-                          disabled={isSubmitting}
-                          className="bg-gradient-accent hover:shadow-soft"
-                        >
+                        <Button type="submit" disabled={isSubmitting} className="bg-gradient-accent hover:shadow-soft">
                           {isSubmitting ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
