@@ -1,11 +1,6 @@
-<<<<<<< HEAD
-import { useState } from "react";
-import { Formik, Form, Field, ErrorMessage } from "formik";
-=======
 import { useState, useEffect } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { useNavigate } from "react-router-dom";
->>>>>>> Gibson
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,15 +18,13 @@ import { foodListingValidationSchema, initialFoodListingValues } from "@/lib/val
 import { formatCurrency } from "@/lib/currency";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { foodApi } from "@/lib/api";
+import { foodApi}` from "@/lib/api";
 
 const CreateListingPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { currentUser, userRole, backendUser } = useAuth();
 
-<<<<<<< HEAD
-=======
   // Check if user is authenticated and is a store owner
   useEffect(() => {
     if (!currentUser || userRole !== 'store_owner') {
@@ -41,7 +34,6 @@ const CreateListingPage = () => {
     }
   }, [currentUser, userRole, navigate]);
 
->>>>>>> Gibson
   const categories = [
     "Bakery",
     "Produce", 
@@ -54,8 +46,6 @@ const CreateListingPage = () => {
     "Snacks"
   ];
 
-<<<<<<< HEAD
-=======
   // Get saved form data or use initial values
   const getInitialValues = () => {
     const savedData = localStorage.getItem('lastbite_draft_listing');
@@ -79,15 +69,10 @@ const CreateListingPage = () => {
     }
   };
 
->>>>>>> Gibson
   const onSubmit = async (values: typeof initialFoodListingValues, { resetForm }: { resetForm: () => void }) => {
     setIsSubmitting(true);
     
     try {
-<<<<<<< HEAD
-      // TODO: Implement API call to create listing
-      console.log("Creating listing:", values);
-=======
       // Check authentication first
       if (!currentUser || !backendUser) {
         toast.error("Please sign in to create listings.");
@@ -103,8 +88,7 @@ const CreateListingPage = () => {
       };
 
       console.log("Creating listing:", listingData);
->>>>>>> Gibson
-      
+
       // Call API
       const result = await foodApi.createFood({ 
         ...listingData,
@@ -133,7 +117,6 @@ const CreateListingPage = () => {
   };
 
   // State to track form values for auto-save
-  const [currentFormValues, setCurrentFormValues] = useState(getInitialValues());
   const [formValuesForSave, setFormValuesForSave] = useState(getInitialValues());
 
   // Auto-save effect
@@ -179,14 +162,6 @@ const CreateListingPage = () => {
             </CardHeader>
             <CardContent>
               <Formik
-<<<<<<< HEAD
-                initialValues={initialFoodListingValues}
-                validationSchema={foodListingValidationSchema}
-                onSubmit={onSubmit}
-              >
-                {({ values, setFieldValue, errors, touched }) => (
-                  <Form className="space-y-6">
-=======
                 initialValues={getInitialValues()}
                 validationSchema={foodListingValidationSchema}
                 onSubmit={onSubmit}
@@ -203,252 +178,158 @@ const CreateListingPage = () => {
                   
                   return (
                     <Form className="space-y-6">
->>>>>>> Gibson
-                {/* Basic Information */}
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Food Item Name *</Label>
-                    <Field
-                      as={Input}
-                      id="name"
-                      name="name"
-                      placeholder="e.g., Artisan Sourdough Bread"
-                    />
-                    <ErrorMessage name="name" component="p" className="text-sm text-red-500 mt-1" />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Field
-                      as={Textarea}
-                      id="description"
-                      name="description"
-                      placeholder="Describe the food item, its quality, and any special features..."
-                      rows={3}
-                    />
-                    <ErrorMessage name="description" component="p" className="text-sm text-red-500 mt-1" />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="category">Category *</Label>
-<<<<<<< HEAD
-                    <Select value={values.category || ""} onValueChange={(value) => setFieldValue("category", value)}>
-=======
-                    <Select value={values.category} onValueChange={(value) => setFieldValue("category", value)}>
->>>>>>> Gibson
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map(category => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-<<<<<<< HEAD
-                    {errors.category && touched.category && (
-                      <p className="text-sm text-red-500 mt-1">{errors.category}</p>
-                    )}
-=======
-                    <ErrorMessage name="category" component="p" className="text-sm text-red-500 mt-1" />
->>>>>>> Gibson
-                  </div>
-                </div>
-
-                {/* Pricing */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Pricing</h3>
-                  
-<<<<<<< HEAD
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="price">Price (KES) *</Label>
-                      <Field
-                        as={Input}
-                        id="price"
-                        name="price"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="399"
-                      />
-                      <ErrorMessage name="price" component="p" className="text-sm text-red-500 mt-1" />
-                    </div>
-
-=======
-                  <div>
-                    <Label htmlFor="price">Price (KES) *</Label>
-                    <Field
-                      as={Input}
-                      id="price"
-                      name="price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="399.00"
-                    />
-                    <ErrorMessage name="price" component="p" className="text-sm text-red-500 mt-1" />
-                  </div>
-                </div>
-
-                {/* Inventory & Expiry */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Inventory & Expiry</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
->>>>>>> Gibson
-                    <div>
-                      <Label htmlFor="stock">Stock Quantity *</Label>
-                      <Field
-                        as={Input}
-                        id="stock"
-                        name="stock"
-                        type="number"
-                        min="1"
-                        placeholder="12"
-                      />
-                      <ErrorMessage name="stock" component="p" className="text-sm text-red-500 mt-1" />
-<<<<<<< HEAD
-=======
-                    </div>
-
-                    <div>
-                      <Label>Expiry Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !values.expiry_date && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {values.expiry_date ? format(new Date(values.expiry_date), "PPP") : "Pick a date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={values.expiry_date ? new Date(values.expiry_date) : undefined}
-                            onSelect={(date) => setFieldValue("expiry_date", date)}
-                            initialFocus
-                            disabled={(date) => date < new Date()}
+                      {/* Basic Information */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="name">Food Item Name *</Label>
+                          <Field
+                            as={Input}
+                            id="name"
+                            name="name"
+                            placeholder="e.g., Artisan Sourdough Bread"
                           />
-                        </PopoverContent>
-                      </Popover>
-                      <ErrorMessage name="expiry_date" component="p" className="text-sm text-red-500 mt-1" />
->>>>>>> Gibson
-                    </div>
-                  </div>
-                </div>
+                          <ErrorMessage name="name" component="p" className="text-sm text-red-500 mt-1" />
+                        </div>
 
-<<<<<<< HEAD
-                {/* Expiry Date */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Expiry Date</h3>
-                  
-                  <div>
-                    <Label>Expiry Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
+                        <div>
+                          <Label htmlFor="description">Description</Label>
+                          <Field
+                            as={Textarea}
+                            id="description"
+                            name="description"
+                            placeholder="Describe the food item, its quality, and any special features..."
+                            rows={3}
+                          />
+                          <ErrorMessage name="description" component="p" className="text-sm text-red-500 mt-1" />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="category">Category *</Label>
+                          <Select value={values.category} onValueChange={(value) => setFieldValue("category", value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categories.map(category => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <ErrorMessage name="category" component="p" className="text-sm text-red-500 mt-1" />
+                        </div>
+                      </div>
+
+                      {/* Pricing */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Pricing</h3>
+                        
+                        <div>
+                          <Label htmlFor="price">Price (KES) *</-label>
+                          <Field
+                            as={Input}
+                            id="price"
+                            name="price"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="399.00"
+                          />
+                          <ErrorMessage name="price" component="p" className="text-sm text-red-500 mt-1" />
+                        </div>
+                      </div>
+
+                      {/* Inventory & Expiry */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Inventory & Expiry</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="stock">Stock Quantity *</Label>
+                            <Field
+                              as={Input}
+                              id="stock"
+                              name="stock"
+                              type="number"
+                              min="1"
+                              placeholder="12"
+                            />
+                            <ErrorMessage name="stock" component="p" className="text-sm text-red-500 mt-1" />
+                          </div>
+
+                          <div>
+                            <Label>Expiry.date</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !values.expiry_date && "text-muted-foreground"
+                                  )}
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {values.expiry_date ? format(new Date(values.expiry_date), "PPP") : "Pick a date"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                  mode="single"
+                                  selected={values.expiry_date ? new Date(values.expiry_date) : undefined}
+                                  onSelect={(date) => setFieldValue("expiry_date", date)}
+                                  initialFocus
+                                  disabled={(date) => date < new Date()}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <ErrorMessage name="expiry_date" component="p" className="text-sm text-red-500 mt-1" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Authentication Status */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Store Owner Info</h3>
+                        
+                        <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span className="text-sm text-green-800">
+                            Logged in as: {backendUser?.name || currentUser?.email} (Store Owner)
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Submit Button */}
+                      <div className="flex justify-end space-x-4 pt-6">
+                        <Button 
+                          type="button" 
                           variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !values.expiry_date && "text-muted-foreground"
-                          )}
+                          onClick={() => window.location.reload()}
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {values.expiry_date ? format(new Date(values.expiry_date), "PPP") : "Pick a date"}
+                          Cancel
                         </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={values.expiry_date ? new Date(values.expiry_date) : undefined}
-                          onSelect={(date) => setFieldValue("expiry_date", date)}
-                          initialFocus
-                          disabled={(date) => date < new Date()}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    {errors.expiry_date && touched.expiry_date && (
-                      <p className="text-sm text-red-500 mt-1">{errors.expiry_date}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* User ID */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">User Information</h3>
-                  
-                  <div>
-                    <Label htmlFor="user_id">User ID *</Label>
-                    <Field
-                      as={Input}
-                      id="user_id"
-                      name="user_id"
-                      type="number"
-                      min="1"
-                      placeholder="1"
-                    />
-                    <ErrorMessage name="user_id" component="p" className="text-sm text-red-500 mt-1" />
-=======
-                {/* Authentication Status */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Store Owner Info</h3>
-                  
-                  <div className="flex items-center space-x-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-800">
-                      Logged in as: {backendUser?.name || currentUser?.email} (Store Owner)
-                    </span>
->>>>>>> Gibson
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <div className="flex justify-end space-x-4 pt-6">
-                  <Button 
-                    type="button" 
-                    variant="outline"
-<<<<<<< HEAD
-                    onClick={() => setFieldValue("name", "")}
-=======
-                    onClick={() => window.location.reload()}
->>>>>>> Gibson
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className="bg-gradient-accent hover:shadow-soft"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Create Listing
-                      </>
-                    )}
-                  </Button>
-                </div>
-<<<<<<< HEAD
-                  </Form>
-                )}
-=======
+                        <Button 
+                          type="submit" 
+                          disabled={isSubmitting}
+                          className="bg-gradient-accent hover:shadow-soft"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="h-4 w-4 mr-2" />
+                              Create Listing
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </Form>
                   );
                 }}
->>>>>>> Gibson
               </Formik>
             </CardContent>
           </Card>
@@ -461,4 +342,3 @@ const CreateListingPage = () => {
 };
 
 export default CreateListingPage;
-

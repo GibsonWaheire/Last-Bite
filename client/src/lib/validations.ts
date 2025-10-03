@@ -9,8 +9,6 @@ export const userValidationSchema = Yup.object({
     .required('Name is required'),
 });
 
-<<<<<<< HEAD
-=======
 // Authentication validation schemas
 export const signInValidationSchema = Yup.object({
   email: Yup.string()
@@ -39,7 +37,6 @@ export const signUpValidationSchema = Yup.object({
     .required('Please confirm your password'),
 });
 
->>>>>>> Gibson
 // Food listing validation schema
 export const foodListingValidationSchema = Yup.object({
   name: Yup.string()
@@ -47,20 +44,10 @@ export const foodListingValidationSchema = Yup.object({
     .max(100, 'Food name must be less than 100 characters')
     .required('Food name is required'),
   description: Yup.string()
-<<<<<<< HEAD
-    .max(500, 'Description must be less than 500 characters'),
-  category: Yup.string()
-    .required('Category is required'),
-  user_id: Yup.number()
-    .integer('User ID must be an integer')
-    .positive('User ID must be positive')
-    .required('User ID is required'),
-=======
     .max(500, 'Description must be less than 500 characters')
     .nullable(),
   category: Yup.string()
     .required('Category is required'),
->>>>>>> Gibson
   stock: Yup.number()
     .integer('Stock must be an integer')
     .min(0, 'Stock cannot be negative')
@@ -94,8 +81,6 @@ export const initialUserValues = {
   name: '',
 };
 
-<<<<<<< HEAD
-=======
 export const initialSignInValues = {
   email: '',
   password: '',
@@ -108,15 +93,10 @@ export const initialSignUpValues = {
   confirmPassword: '',
 };
 
->>>>>>> Gibson
 export const initialFoodListingValues = {
   name: '',
   description: '',
   category: '',
-<<<<<<< HEAD
-  user_id: 1,
-=======
->>>>>>> Gibson
   stock: 1,
   price: 0.0,
   expiry_date: null,
@@ -126,8 +106,4 @@ export const initialPurchaseValues = {
   user_id: 1,
   food_id: 1,
   quantity_bought: 1,
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> Gibson
