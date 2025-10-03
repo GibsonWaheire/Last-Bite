@@ -64,9 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        // If we already have a role set, preserve it during sync
-        const shouldPreserveRole = userRole !== null;
-        await syncUserWithBackend(user, shouldPreserveRole);
+        // Always sync with backend to get the correct role from database
+        await syncUserWithBackend(user, false);
       } else {
         setUserRole(null);
         setBackendUser(null);

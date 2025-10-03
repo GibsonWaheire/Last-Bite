@@ -60,7 +60,7 @@ const SignUpPage = () => {
     try {
       const cred = await createUserWithEmailAndPassword(auth, values.email, values.password);
       
-      // Create backend user (or sync if already exists)
+      // Create backend user
       try {
         await userApi.createUser({
           name: values.name,
@@ -69,12 +69,8 @@ const SignUpPage = () => {
           firebase_uid: cred.user.uid,
         });
       } catch (error: any) {
-        // If user already exists, try to sync Firebase UID
-        if (error.message?.includes('already exists')) {
-          await userApi.syncFirebaseUser(cred.user.uid, values.email, values.name);
-        } else {
-          throw error;
-        }
+        console.error("Backend user creation error:", error);
+        // Continue anyway - backend user will be created on first sign-in
       }
       
       // Set role in AuthContext for dashboard navigation
@@ -115,7 +111,7 @@ const SignUpPage = () => {
     try {
       const cred = await createUserWithEmailAndPassword(auth, values.email, values.password);
       
-      // Create backend user (or sync if already exists)
+      // Create backend user
       try {
         await userApi.createUser({
           name: values.name,
@@ -124,12 +120,8 @@ const SignUpPage = () => {
           firebase_uid: cred.user.uid,
         });
       } catch (error: any) {
-        // If user already exists, try to sync Firebase UID
-        if (error.message?.includes('already exists')) {
-          await userApi.syncFirebaseUser(cred.user.uid, values.email, values.name);
-        } else {
-          throw error;
-        }
+        console.error("Backend user creation error:", error);
+        // Continue anyway - backend user will be created on first sign-in
       }
       
       // Set role in AuthContext for dashboard navigation
